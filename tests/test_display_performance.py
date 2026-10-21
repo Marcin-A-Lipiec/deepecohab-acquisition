@@ -5,6 +5,7 @@ import queue
 from types import SimpleNamespace
 
 import numpy as np
+import pytest
 from PySide6.QtCore import QTimer
 
 from deepecohab_recorder.controllers.camera import CameraController
@@ -30,8 +31,11 @@ def test_notification_burst_yields_to_gui_and_preserves_fifo(workspace):
     assert batches[-1].last_message == "1049"
 
 
-def test_warning_and_error_are_logged_before_pending_display_is_drained(workspace):
+@pytest.mark.parametrize('display_limit', [1, 200])
+def test_warning_and_error_are_logged_before_pending_display_is_drained(workspace, display_limit):
     app, window, root = workspace
+    # One message per batch exercises continuation even on a fast test PC.
+    window.notifications.limit = display_limit
     output = io.StringIO()
     logger = logging.getLogger("deepecohab_recorder.services.application")
     original_level = logger.level
@@ -45,7 +49,14 @@ def test_warning_and_error_are_logged_before_pending_display_is_drained(workspac
         assert "Synthetic low disk space" in output.getvalue()
         window.refresh()
         assert window.config_status.text() == "Synthetic writer failure"
-        assert "Synthetic low disk space" in window.log.toPlainText()
+        if display_limit == 1:
+            assert "Synthetic low disk space" not in window.log.toPlainText()
+            assert window.notifications.timer.isActive()
+        # Bounded display work may span several event-loop turns on a busy PC.
+        qt_wait(app, lambda: "Synthetic low disk space" in window.log.toPlainText())
+        displayed = window.log.toPlainText()
+        assert displayed.index("Synthetic writer failure") < displayed.index("Synthetic low disk space")
+        assert window.config_status.text() == "Synthetic writer failure"
     finally:
         logger.removeHandler(handler)
         logger.setLevel(original_level)
