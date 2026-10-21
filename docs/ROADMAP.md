@@ -12,8 +12,9 @@
 The intended repository is **Marcin-A-Lipiec/deepecohab-acquisition**. Version
 **1.0.0** marks the first public release after the internal 3.2.x modernization
 series. Follow [RELEASING.md](RELEASING.md) for the curated source archive,
-package validation and GitHub upload steps. The original-code license is still
-undecided, and no remote repository/tag/release has been published by this work.
+package validation and GitHub upload steps. The owner selected MIT for the
+application's original code; package metadata and documentation now agree with
+the existing LICENSE. The local preparation tools do not publish tags or releases.
 
 Final physical acceptance includes a fresh-PC uv installation, visible Explorer double-click,
 update/rollback/removal with retained experiment data, and the exact camera SDK

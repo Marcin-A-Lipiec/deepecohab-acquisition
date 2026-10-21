@@ -16,7 +16,7 @@ uv sync --locked --group dev --python 3.12
 uv run --locked python tools/run_validation.py
 uv build
 uv run --locked python tools/verify_distribution.py --wheel dist/deepecohab_acquisition-1.0.0-py3-none-any.whl --sdist dist/deepecohab_acquisition-1.0.0.tar.gz
-uv run --locked python tools/prepare_github_release.py --tag v1.0.0
+uv run --locked python tools/prepare_github_release.py --tag v1.0.0 --require-license
 ```
 
 The last command writes these local artifacts into `dist/`:
@@ -41,23 +41,25 @@ They use isolated tool directories and do not replace the existing Desktop icon.
 The automated suite does not perform physical acquisition. Record acquisition-PC,
 fresh-PC and downstream-analysis acceptance separately using that guide.
 
-## Finalize the license
+## Verify the license
 
-The owner has not selected the original-code license. No MIT or other project
-license has been assumed. See [LICENSE_STATUS.md](../LICENSE_STATUS.md); bundled
-reference, font and icon notices remain in force for those materials.
+The owner selected the [MIT license](../LICENSE) for the application's original
+code. `pyproject.toml` declares `license = "MIT"` and explicitly includes
+`LICENSE` and `THIRD_PARTY_NOTICES.md` as license files. Bundled reference, font
+and icon notices remain in force for those materials; see
+[LICENSE_STATUS.md](../LICENSE_STATUS.md).
 
-Before public publication, choose the license, add the full `LICENSE`, set the
-project's license metadata in `pyproject.toml`, and update `LICENSE_STATUS.md`.
-Rebuild and audit both packages, then require the licensing gate:
+Before public publication, rebuild and audit both packages, then require the
+licensing gate:
 
 ```powershell
 uv run --locked python tools/prepare_github_release.py --tag v1.0.0 --require-license
 ```
 
-That gate intentionally fails while the decision is pending. It checks for the
-license file and project metadata; the owner must review their content. The
-default command supports preparing local artifacts while that decision is open.
+The gate checks for the license file and project metadata. It now passes with
+the selected MIT license; retain the copyright text and third-party notices
+when rebuilding or redistributing the package. The modern SPDX metadata uses
+setuptools 77.0.3 or newer as a build dependency; runtime dependencies are unchanged.
 
 ## Create the GitHub repository
 

@@ -42,8 +42,10 @@
   entry points, acquisition hardware paths and default stitching/interpolation behavior.
   The isolated startup timestamp observation remains under monitoring; it is not
   classified as an active preprocessing bug and no timing policy was changed.
-- Original-code licensing is pending the owner's decision; no license is assigned
-  by this preparation. Publication and physical-hardware acceptance remain separate.
+- Licensed the application's original code under MIT, retaining the existing
+  LICENSE and bundled third-party notices. Package metadata and release guidance
+  reflect the owner's decision. Publication and physical-hardware acceptance
+  remain separate.
 
 ## DeepEcoHab Acquisition 3.2.5 — modernization stage 5
 

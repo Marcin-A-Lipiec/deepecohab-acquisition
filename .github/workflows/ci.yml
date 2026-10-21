@@ -49,7 +49,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $releaseTag = "v${env:ACQUISITION_VERSION}"
           if ($env:GITHUB_REF_TYPE -eq 'tag') { $releaseTag = $env:GITHUB_REF_NAME }
-          uv run --locked python tools/prepare_github_release.py --tag $releaseTag
+          uv run --locked python tools/prepare_github_release.py --tag $releaseTag --require-license
       - name: Validate installed wheel and Windows shortcut
         if: matrix.python == '3.12'
         run: |

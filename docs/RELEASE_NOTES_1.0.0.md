@@ -30,6 +30,7 @@ and FFmpeg/ffprobe require separate installation. RFID and offline preprocessing
 do not require the camera SDK.
 
 These notes are prepared locally and must be reviewed before publication. The
-original-code license is still undecided; see [LICENSE_STATUS.md](https://github.com/Marcin-A-Lipiec/deepecohab-acquisition/blob/v1.0.0/LICENSE_STATUS.md).
+application's original code is MIT licensed; see [LICENSE](https://github.com/Marcin-A-Lipiec/deepecohab-acquisition/blob/v1.0.0/LICENSE).
+Bundled components retain their own licenses and notices.
 Software test results do not certify a particular acquisition PC, physical camera
 or electrical timing. See [TESTING.md](https://github.com/Marcin-A-Lipiec/deepecohab-acquisition/blob/v1.0.0/TESTING.md) for acceptance checks.

@@ -76,7 +76,7 @@ deepecohab-acquisition-shortcut
 ```
 
 There is no PyPI publication requirement. The project license is
-[undecided](../LICENSE_STATUS.md); third-party reference, icon and font notices
+[MIT](../LICENSE); third-party reference, icon and font notices
 are preserved. See [uv's tools guide](https://docs.astral.sh/uv/guides/tools/).
 `uv.lock` controls development builds; tool installations resolve the package
 metadata. Use the tested requirements constraints to reproduce the lab environment.

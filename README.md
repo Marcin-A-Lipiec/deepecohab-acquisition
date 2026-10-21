@@ -382,7 +382,7 @@ launchers remain available for developers; they are separate from uv tool instal
 - Scientific contracts: [config v8](docs/CONFIG_V8.md), GUI state v1,
   [diagnostics v12](docs/DIAGNOSTIC_V12.md), and Parquet schema v5. Application
   releases do not themselves change these contracts.
-- [Project license](LICENSE) and [third-party notices](THIRD_PARTY_NOTICES.md).
+- [MIT project license](LICENSE) and [third-party notices](THIRD_PARTY_NOTICES.md).
 
 Maintainers publish an immutable `vX.Y.Z` tag, matching packages and release notes
 for every software release. README-only corrections can remain ordinary commits

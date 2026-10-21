@@ -27,4 +27,4 @@ Generated checks and investigation outputs belong under `.artifacts/`.
 Describe the concrete behavior changed and the checks performed in each pull
 request. Include SDK/firmware versions for hardware changes and distinguish
 simulated results from physical acceptance. See [LICENSE_STATUS.md](LICENSE_STATUS.md)
-for the project's pending license decision.
+for the project's MIT license and bundled third-party notices.
