@@ -1,0 +1,26 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "version",
+    "main_config",
+    "state"
+  ],
+  "properties": {
+    "format": {
+      "const": "acquisition_gui_state"
+    },
+    "version": {
+      "const": 1
+    },
+    "main_config": {
+      "type": "string"
+    },
+    "state": {
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Acquisition GUI state v1"
+}

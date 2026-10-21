@@ -1,0 +1,32 @@
+name: Bug report
+description: Report a reproducible acquisition or preprocessing problem.
+body:
+  - type: markdown
+    attributes:
+      value: Do not attach private recordings, animal identifiers, credentials or unredacted experiment configurations. Prefer a small synthetic example.
+  - type: input
+    id: version
+    attributes:
+      label: Acquisition version
+      description: Run deepecohab-acquisition-cli --version.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Installation and hardware
+      description: Windows/Python versions, installation command, and relevant board or camera SDK versions. Redact personal paths.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction and expected behavior
+      description: List the steps, expected result and actual result. For scientific-output problems, provide a minimal redacted or synthetic raw/output example and the inserted flag.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant error or System check excerpt
+      description: Include only the relevant redacted excerpt.

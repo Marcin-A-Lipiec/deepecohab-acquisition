@@ -1,0 +1,16 @@
+* text=auto
+*.py text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.toml text eol=lf
+*.yml text eol=lf
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.ico binary
+*.ttf binary
+*.zip binary
+# Preserve bundled resource hashes, firmware manifests and raw fixture bytes.
+deepecohab_recorder/assets/** -text
+firmware/** -text
+tests/fixtures/** -text
+tests/experiment* -text

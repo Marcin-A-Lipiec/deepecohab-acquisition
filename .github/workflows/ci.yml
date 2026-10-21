@@ -1,0 +1,82 @@
+name: Windows validation
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.10', '3.11', '3.12']
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      UV_CACHE_DIR: ${{ github.workspace }}/.artifacts/uv-cache
+      UV_PYTHON_INSTALL_DIR: ${{ github.workspace }}/.artifacts/python
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install uv and Python
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: '0.10.7'
+          python-version: ${{ matrix.python }}
+          enable-cache: false
+      - name: Install locked dependencies
+        run: uv sync --locked --group dev --python ${{ matrix.python }}
+      - name: Read centralized release version
+        run: |
+          $releaseVersion = uv run --locked python -c "from deepecohab_recorder import __version__; print(__version__)"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          "ACQUISITION_VERSION=$releaseVersion" >> $env:GITHUB_ENV
+      - name: Install video tools for synthetic recording checks
+        run: choco install ffmpeg --yes --no-progress
+      - name: Run all software regressions
+        run: uv run --locked python tools/run_validation.py --output .artifacts/ci/regression
+      - name: Build and check release packages
+        if: matrix.python == '3.12'
+        run: |
+          uv build
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $wheel = Join-Path dist "deepecohab_acquisition-${env:ACQUISITION_VERSION}-py3-none-any.whl"
+          $sdist = Join-Path dist "deepecohab_acquisition-${env:ACQUISITION_VERSION}.tar.gz"
+          uv run --locked python tools/verify_distribution.py --wheel $wheel --sdist $sdist --output .artifacts/ci/distribution.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $releaseTag = "v${env:ACQUISITION_VERSION}"
+          if ($env:GITHUB_REF_TYPE -eq 'tag') { $releaseTag = $env:GITHUB_REF_NAME }
+          uv run --locked python tools/prepare_github_release.py --tag $releaseTag
+      - name: Validate installed wheel and Windows shortcut
+        if: matrix.python == '3.12'
+        run: |
+          $env:UV_TOOL_DIR = Join-Path $env:GITHUB_WORKSPACE '.artifacts/ci/tools'
+          $env:UV_TOOL_BIN_DIR = Join-Path $env:GITHUB_WORKSPACE '.artifacts/ci/bin'
+          $wheel = Join-Path dist "deepecohab_acquisition-${env:ACQUISITION_VERSION}-py3-none-any.whl"
+          uv tool install --python 3.12 --constraints requirements.txt $wheel
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          uv run --locked python tools/validate_installation.py --tool-root .artifacts/ci/tools --output .artifacts/ci/installed --wheel $wheel
+      - name: Retain validation reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: validation-python-${{ matrix.python }}
+          path: |
+            .artifacts/ci/regression/test_results.json
+            .artifacts/ci/regression/test_output.txt
+            .artifacts/ci/regression/pytest.xml
+            .artifacts/ci/distribution.json
+            .artifacts/ci/installed/installation_results.json
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Retain locally prepared release artifacts
+        if: matrix.python == '3.12' && success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-packages
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 14

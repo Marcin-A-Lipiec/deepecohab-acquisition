@@ -1,0 +1,324 @@
+{
+  "version": 2,
+  "recording": {
+    "name": "Tsc2_Marcin_2025-05-28_C57_Vglut2_HET_M_SP",
+    "recording_location": "006",
+    "timeline": {
+      "start_datetime": "2025-05-28T15:10:09+02:00",
+      "end_datetime": "2025-06-03T00:21:14+02:00",
+      "recording_timezone": "Europe/Warsaw",
+      "start_from": "dark_phase",
+      "phases": {
+        "light_phase": "00:00",
+        "dark_phase": "12:00"
+      }
+    },
+    "notes": "01.06.2025 ~02:15 - After 4 dark phases, 10h before 5th dark phase, bedding in food&water cages was exchanged with sandpaper.",
+    "layout": {
+      "cages": [
+        {
+          "name": "cage_1",
+          "cell_id": "C1",
+          "cage_type": "standard",
+          "antennas": [
+            "1",
+            "8"
+          ]
+        },
+        {
+          "name": "cage_2",
+          "cell_id": "C2",
+          "cage_type": "standard",
+          "antennas": [
+            "2",
+            "3"
+          ]
+        },
+        {
+          "name": "cage_3",
+          "cell_id": "C3",
+          "cage_type": "standard",
+          "antennas": [
+            "4",
+            "5"
+          ]
+        },
+        {
+          "name": "cage_4",
+          "cell_id": "C4",
+          "cage_type": "standard",
+          "antennas": [
+            "6",
+            "7"
+          ]
+        }
+      ],
+      "tunnels": [
+        {
+          "name": "tunnel_1",
+          "tunnel_no": 1,
+          "start_cell_id": "C1",
+          "end_cell_id": "C2",
+          "dead_end": false,
+          "antenna_count": 2,
+          "antennas": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "name": "tunnel_2",
+          "tunnel_no": 2,
+          "start_cell_id": "C2",
+          "end_cell_id": "C3",
+          "dead_end": false,
+          "antenna_count": 2,
+          "antennas": [
+            "3",
+            "4"
+          ]
+        },
+        {
+          "name": "tunnel_3",
+          "tunnel_no": 3,
+          "start_cell_id": "C3",
+          "end_cell_id": "C4",
+          "dead_end": false,
+          "antenna_count": 2,
+          "antennas": [
+            "5",
+            "6"
+          ]
+        },
+        {
+          "name": "tunnel_4",
+          "tunnel_no": 4,
+          "start_cell_id": "C1",
+          "end_cell_id": "C4",
+          "dead_end": false,
+          "antenna_count": 2,
+          "antennas": [
+            "8",
+            "7"
+          ]
+        }
+      ],
+      "antenna_combinations": {
+        "1_1": "cage_1",
+        "1_2": "c1_c2",
+        "1_8": "cage_1",
+        "2_1": "c2_c1",
+        "2_2": "cage_2",
+        "2_3": "cage_2",
+        "3_2": "cage_2",
+        "3_3": "cage_2",
+        "3_4": "c2_c3",
+        "4_3": "c3_c2",
+        "4_4": "cage_3",
+        "4_5": "cage_3",
+        "5_4": "cage_3",
+        "5_5": "cage_3",
+        "5_6": "c3_c4",
+        "6_5": "c4_c3",
+        "6_6": "cage_4",
+        "6_7": "cage_4",
+        "7_6": "cage_4",
+        "7_7": "cage_4",
+        "7_8": "c4_c1",
+        "8_1": "cage_1",
+        "8_7": "c1_c4",
+        "8_8": "cage_1"
+      },
+      "tunnels_map": {
+        "c1_c2": "tunnel_1",
+        "c1_c4": "tunnel_4",
+        "c2_c1": "tunnel_1",
+        "c2_c3": "tunnel_2",
+        "c3_c2": "tunnel_2",
+        "c3_c4": "tunnel_3",
+        "c4_c1": "tunnel_4",
+        "c4_c3": "tunnel_3"
+      }
+    },
+    "cohort": {
+      "n_mice": 12,
+      "animals": [
+        {
+          "tag": "1A63A81904",
+          "row_index": 1,
+          "mouse_line": "Vglut2",
+          "genotype": "HET",
+          "subject_name": "ID1",
+          "sex": "Male",
+          "date_of_birth": "2024-11-28",
+          "genetic_background": "C57B",
+          "treatment": "sandpaper",
+          "notes": ""
+        },
+        {
+          "tag": "3F5DEC1A04",
+          "row_index": 2,
+          "mouse_line": "Vglut2",
+          "genotype": "HET",
+          "subject_name": "ID2",
+          "sex": "Male",
+          "date_of_birth": "2024-11-28",
+          "genetic_background": "C57B",
+          "treatment": "sandpaper",
+          "notes": ""
+        },
+        {
+          "tag": "4FFE4B1A04",
+          "row_index": 3,
+          "mouse_line": "Vglut2",
+          "genotype": "HET",
+          "subject_name": "ID3",
+          "sex": "Male",
+          "date_of_birth": "2024-11-28",
+          "genetic_background": "C57B",
+          "treatment": "sandpaper",
+          "notes": ""
+        },
+        {
+          "tag": "52D8E51A04",
+          "row_index": 4,
+          "mouse_line": "Vglut2",
+          "genotype": "HET",
+          "subject_name": "ID4",
+          "sex": "Male",
+          "date_of_birth": "2024-11-28",
+          "genetic_background": "C57B",
+          "treatment": "sandpaper",
+          "notes": ""
+        },
+        {
+          "tag": "8114E61A04",
+          "row_index": 5,
+          "mouse_line": "Vglut2",
+          "genotype": "HET",
+          "subject_name": "ID5",
+          "sex": "Male",
+          "date_of_birth": "2024-11-28",
+          "genetic_background": "C57B",
+          "treatment": "sandpaper",
+          "notes": ""
+        },
+        {
+          "tag": "83024C1A04",
+          "row_index": 6,
+          "mouse_line": "Vglut2",
+          "genotype": "HET",
+          "subject_name": "ID6",
+          "sex": "Male",
+          "date_of_birth": "2024-11-28",
+          "genetic_background": "C57B",
+          "treatment": "sandpaper",
+          "notes": ""
+        },
+        {
+          "tag": "90184C1A04",
+          "row_index": 7,
+          "mouse_line": "Vglut2",
+          "genotype": "HET",
+          "subject_name": "ID7",
+          "sex": "Male",
+          "date_of_birth": "2024-11-28",
+          "genetic_background": "C57B",
+          "treatment": "sandpaper",
+          "notes": ""
+        },
+        {
+          "tag": "C976E61A04",
+          "row_index": 8,
+          "mouse_line": "Vglut2",
+          "genotype": "HET",
+          "subject_name": "ID8",
+          "sex": "Male",
+          "date_of_birth": "2024-11-28",
+          "genetic_background": "C57B",
+          "treatment": "sandpaper",
+          "notes": ""
+        },
+        {
+          "tag": "D4DBE51A04",
+          "row_index": 9,
+          "mouse_line": "Vglut2",
+          "genotype": "HET",
+          "subject_name": "ID9",
+          "sex": "Male",
+          "date_of_birth": "2024-11-28",
+          "genetic_background": "C57B",
+          "treatment": "sandpaper",
+          "notes": ""
+        },
+        {
+          "tag": "D674EC1A04",
+          "row_index": 10,
+          "mouse_line": "Vglut2",
+          "genotype": "HET",
+          "subject_name": "ID10",
+          "sex": "Male",
+          "date_of_birth": "2024-11-28",
+          "genetic_background": "C57B",
+          "treatment": "sandpaper",
+          "notes": ""
+        },
+        {
+          "tag": "F5174C1A04",
+          "row_index": 11,
+          "mouse_line": "Vglut2",
+          "genotype": "HET",
+          "subject_name": "ID11",
+          "sex": "Male",
+          "date_of_birth": "2024-11-28",
+          "genetic_background": "C57B",
+          "treatment": "sandpaper",
+          "notes": ""
+        },
+        {
+          "tag": "FD71EC1A04",
+          "row_index": 12,
+          "mouse_line": "Vglut2",
+          "genotype": "HET",
+          "subject_name": "ID12",
+          "sex": "Male",
+          "date_of_birth": "2024-11-28",
+          "genetic_background": "C57B",
+          "treatment": "sandpaper",
+          "notes": ""
+        }
+      ]
+    }
+  },
+  "acqusition": {
+    "environment": {
+      "com_port": "COM",
+      "light_start_hhmm": "00:00",
+      "light_end_hhmm": "12:00",
+      "started_iso": "2025-05-28T14:39:44+02:00",
+      "experiment_env_log_csv": "habitat_log.csv",
+      "last_record": {}
+    },
+    "_provenance": {
+      "generated_by": "generate_experiment_configs.py",
+      "generated_at": "2026-08-31T10:28:06.741330+02:00",
+      "recording_dir": "C:/Users/KonradD/Documents/deepecohab/data_catalog/Eco-HAB/vGLUT/Tsc2_Marcin_2025-05-28_C57_Vglut2_HET_M_SP",
+      "com_ports": [
+        "COM"
+      ],
+      "acquisition_parts": [],
+      "sources": {
+        "layout": "Eco_hab_results_2026-04-17/config.toml",
+        "environment.light_start_hhmm": "habitat_config.csv",
+        "environment.started_iso": "habitat_config.csv",
+        "experiment.start_datetime": "Eco_hab_results_2026-04-17/config.toml",
+        "animals.rows": "Vglut2_HET_28_05_2025_list_of_tags.csv",
+        "animals cohort metadata": "Mouse_list.txt",
+        "experiment.notes": "READ ME.txt"
+      },
+      "warnings": [
+        "the mouse list gives several dates of birth but never maps a mouse onto its tag, so date_of_birth was left empty"
+      ]
+    }
+  }
+}

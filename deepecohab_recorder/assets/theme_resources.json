@@ -1,0 +1,146 @@
+{
+  "geist_release": "v1.7.2",
+  "geist_revision": "a73329da8fc62afc917f796555202e4997f79b7c",
+  "resources": [
+    {
+      "file": "fonts/Geist-Regular.ttf",
+      "source": "https://raw.githubusercontent.com/vercel/geist-font/a73329da8fc62afc917f796555202e4997f79b7c/fonts/Geist/ttf/Geist-Regular.ttf",
+      "sha256": "85a1c6b18a6b0a06dfe9fd4f6d6a5d4979f74ec861eaef4bc7868b5492b8a117"
+    },
+    {
+      "file": "fonts/Geist-SemiBold.ttf",
+      "source": "https://raw.githubusercontent.com/vercel/geist-font/a73329da8fc62afc917f796555202e4997f79b7c/fonts/Geist/ttf/Geist-SemiBold.ttf",
+      "sha256": "b9f52322d6d20a7ff1e7fe1310ff12ec851aebb83d24f8b4f1d4149298f489b2"
+    },
+    {
+      "file": "fonts/GeistMono-Regular.ttf",
+      "source": "https://raw.githubusercontent.com/vercel/geist-font/a73329da8fc62afc917f796555202e4997f79b7c/fonts/GeistMono/ttf/GeistMono-Regular.ttf",
+      "sha256": "5a0de4b3d54ab272f76a1d8c84b7fb24c67bbec6591d5300e61c7bc10094b6c8"
+    },
+    {
+      "file": "licenses/Geist-OFL.txt",
+      "source": "https://raw.githubusercontent.com/vercel/geist-font/a73329da8fc62afc917f796555202e4997f79b7c/LICENSE.txt",
+      "sha256": "930853ee1daa68554d9e35c8a9175affb74f699fad9a5da6ee5ebe76379d9137"
+    },
+    {
+      "file": "licenses/Tabler-LICENSE.txt",
+      "source": "https://raw.githubusercontent.com/tabler/tabler-icons/main/LICENSE",
+      "sha256": "b740a1d46122672da62833e97f7e7c8a13fa85cbc7445b584b297cc00dde93db"
+    },
+    {
+      "file": "icons/folders.svg",
+      "source": "Supplied DeepEcoHab 0.6.0: icons\\folders.svg",
+      "sha256": "ae67515607c3af9cc33012777435714a73262b3274087c7a50211b458fb64172"
+    },
+    {
+      "file": "icons/download.svg",
+      "source": "Supplied DeepEcoHab 0.6.0: icons\\download.svg",
+      "sha256": "4eb677cd1ac6079e8dc85fab1eec52b32475d5734c0263877e863a5a3fb8c98f"
+    },
+    {
+      "file": "icons/circle-check.svg",
+      "source": "Supplied DeepEcoHab 0.6.0: icons\\circle-check.svg",
+      "sha256": "0141ddfc436bf236c4baacdae1cfdab7685779b5db206c6cd7e644ad9205c107"
+    },
+    {
+      "file": "icons/info-circle.svg",
+      "source": "Supplied DeepEcoHab 0.6.0: icons\\info-circle.svg",
+      "sha256": "a966e6a6850ffc218094944df08945849276ccd6d88c133e6dd88664079b42e2"
+    },
+    {
+      "file": "icons/circle-x.svg",
+      "source": "Supplied DeepEcoHab 0.6.0: icons\\circle-x.svg",
+      "sha256": "b4912f5e98fc59bb80c1675fc395f1a05edef878d4fbc8607af22916f1e077b2"
+    },
+    {
+      "file": "icons/sun.svg",
+      "source": "Supplied DeepEcoHab 0.6.0: icons\\sun.svg",
+      "sha256": "593b62003d4a103b46f0b9231666b21240d796ff6779f68131cc0afdee44cc2a"
+    },
+    {
+      "file": "icons/moon.svg",
+      "source": "Supplied DeepEcoHab 0.6.0: icons\\moon.svg",
+      "sha256": "0595c39468bd85395e8a8858d8b3f3eee64495ef1dde770203677de579fd1a8f"
+    },
+    {
+      "file": "icons/users.svg",
+      "source": "Supplied DeepEcoHab 0.6.0: icons\\users.svg",
+      "sha256": "d8fc52747b966a34d42ab4f09bd95cf8edb6759e14daab3996cea91b2b7486d8"
+    },
+    {
+      "file": "icons/layout-dashboard.svg",
+      "source": "Supplied DeepEcoHab 0.6.0: icons\\layout-dashboard.svg",
+      "sha256": "a8b6be1e1e2753debf959c216f6660aa98a63afb8f26735fb61c9f17eed53b67"
+    },
+    {
+      "file": "icons/notes.svg",
+      "source": "Supplied DeepEcoHab 0.6.0: icons\\notes.svg",
+      "sha256": "a46103b27c7e7059e5736bb86610cf2ccd886e196f8c84fe6d92248cc20476b7"
+    },
+    {
+      "file": "icons/bolt.svg",
+      "source": "Supplied DeepEcoHab 0.6.0: icons\\bolt.svg",
+      "sha256": "f8c934d076ab790773e54a30462e6a811c7d827a03e2c88f37c454d6192804b8"
+    },
+    {
+      "file": "icons/calendar.svg",
+      "source": "Supplied DeepEcoHab 0.6.0: icons\\calendar.svg",
+      "sha256": "101e6e53ea5c3bcb93805a389bd1fd29f0d681a85110503c33a83c1abdeb089b"
+    },
+    {
+      "file": "icons/player-play.svg",
+      "source": "Supplied DeepEcoHab 0.6.0: icons\\player-play.svg",
+      "sha256": "f4ccb68afe2b5e8a0024d424479729546f602ea1903646421f910da3d199c8bb"
+    },
+    {
+      "file": "icons/table.svg",
+      "source": "Supplied DeepEcoHab 0.6.0: icons\\table.svg",
+      "sha256": "a9e42f46a46bf42faf92856920b6ebb8bb899bb7abed9c36ef61c1bb834c8be7"
+    },
+    {
+      "file": "icons/grid-dots.svg",
+      "source": "Supplied DeepEcoHab 0.6.0: icons\\grid-dots.svg",
+      "sha256": "896571237047c5da27e6d7272b61d4a19c6ecfa91cabdd39d557c290902199c9"
+    },
+    {
+      "file": "icons/refresh.svg",
+      "source": "Supplied DeepEcoHab 0.6.0: icons\\refresh.svg",
+      "sha256": "c382dfe9d023444f6571dc8739aec7464d28bcd428151c30e667f09e7efc005c"
+    },
+    {
+      "file": "icons/plus.svg",
+      "source": "Supplied DeepEcoHab 0.6.0: icons\\plus.svg",
+      "sha256": "a1b64ea632bba672bdf407505a4a2f4e21e33ad044e0b27c85cabd9dc23bb080"
+    },
+    {
+      "file": "icons/trash.svg",
+      "source": "Supplied DeepEcoHab 0.6.0: icons\\trash.svg",
+      "sha256": "9e5ef3622fbd9db16d322cfcddbc9c3fdc571b141c548f41a1d5c15df3ccf4fd"
+    },
+    {
+      "file": "icons/search.svg",
+      "source": "Supplied DeepEcoHab 0.6.0: icons\\search.svg",
+      "sha256": "8bcb745a95422667fe199aa95088aa179d416c9b11c6d5800f3bd926bf37a95b"
+    },
+    {
+      "file": "icons/maximize.svg",
+      "source": "Supplied DeepEcoHab 0.6.0: icons\\maximize.svg",
+      "sha256": "1827284a167b6b5424b5fe6ca2f7a8f99e76e4cb659daa106847e0b023a0c47e"
+    },
+    {
+      "file": "icons/brand.svg",
+      "source": "Supplied DeepEcoHab 0.6.0: icons\\brand.svg",
+      "sha256": "1151ef19f254c20ea72b5d55ca80b9cb32b162dbcc799addad194332f81848fc"
+    },
+    {
+      "file": "icons/layout-sidebar-left-collapse.svg",
+      "source": "Supplied DeepEcoHab 0.6.0: icons\\layout-sidebar-left-collapse.svg",
+      "sha256": "cf3689eb86df0963dd27351e71cc2620b181c2cfd0728337943221cfad4817c1"
+    },
+    {
+      "file": "icons/layout-sidebar-left-expand.svg",
+      "source": "Supplied DeepEcoHab 0.6.0: icons\\layout-sidebar-left-expand.svg",
+      "sha256": "bb34a269759734dd02d6a419c4c05fc3e75c52c66f494781f78615884f36e33d"
+    }
+  ]
+}

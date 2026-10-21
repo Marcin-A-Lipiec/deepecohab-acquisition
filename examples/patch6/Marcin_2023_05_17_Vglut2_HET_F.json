@@ -1,0 +1,436 @@
+{
+  "version": 4,
+  "recording": {
+    "name": "Marcin_2023_05_17_Vglut2_HET_F",
+    "recording_location": "006",
+    "notes": "Some notes from the project",
+    "timeline": {
+      "start_datetime": "2023-05-17T13:02:41+02:00",
+      "end_datetime": "2023-05-22T10:02:17+02:00",
+      "recording_timezone": "Europe/Warsaw",
+      "start_from": "dark_phase",
+      "phases": {
+        "light_phase": "01:00",
+        "dark_phase": "13:00"
+      },
+      "phase_schedule": {
+        "mode": "legacy_local"
+      }
+    },
+    "cohort": {
+      "n_mice": 10,
+      "animals": [
+        {
+          "tag": "1850E61A04",
+          "row_index": 1,
+          "mouse_line": "Vglut2",
+          "genotype": "HET",
+          "subject_name": "ID01",
+          "sex": "Female",
+          "date_of_birth": "2023-01-22",
+          "genetic_background": "C57B",
+          "treatment": "no",
+          "notes": ""
+        },
+        {
+          "tag": "436DA81904",
+          "row_index": 2,
+          "mouse_line": "Vglut2",
+          "genotype": "HET",
+          "subject_name": "ID02",
+          "sex": "Female",
+          "date_of_birth": "2023-01-22",
+          "genetic_background": "C57B",
+          "treatment": "no",
+          "notes": ""
+        },
+        {
+          "tag": "8841E61A04",
+          "row_index": 3,
+          "mouse_line": "Vglut2",
+          "genotype": "HET",
+          "subject_name": "ID03",
+          "sex": "Female",
+          "date_of_birth": "2023-01-22",
+          "genetic_background": "C57B",
+          "treatment": "no",
+          "notes": ""
+        },
+        {
+          "tag": "8D659C1A04",
+          "row_index": 4,
+          "mouse_line": "Vglut2",
+          "genotype": "HET",
+          "subject_name": "ID04",
+          "sex": "Female",
+          "date_of_birth": "2023-01-22",
+          "genetic_background": "C57B",
+          "treatment": "no",
+          "notes": ""
+        },
+        {
+          "tag": "BB869C1A04",
+          "row_index": 5,
+          "mouse_line": "Vglut2",
+          "genotype": "HET",
+          "subject_name": "ID05",
+          "sex": "Female",
+          "date_of_birth": "2023-01-22",
+          "genetic_background": "C57B",
+          "treatment": "no",
+          "notes": ""
+        },
+        {
+          "tag": "BE5AE61A04",
+          "row_index": 6,
+          "mouse_line": "Vglut2",
+          "genotype": "HET",
+          "subject_name": "ID06",
+          "sex": "Female",
+          "date_of_birth": "2023-01-22",
+          "genetic_background": "C57B",
+          "treatment": "no",
+          "notes": ""
+        },
+        {
+          "tag": "C224A81904",
+          "row_index": 7,
+          "mouse_line": "Vglut2",
+          "genotype": "HET",
+          "subject_name": "ID07",
+          "sex": "Female",
+          "date_of_birth": "2023-01-22",
+          "genetic_background": "C57B",
+          "treatment": "no",
+          "notes": ""
+        },
+        {
+          "tag": "C3699C1A04",
+          "row_index": 8,
+          "mouse_line": "Vglut2",
+          "genotype": "HET",
+          "subject_name": "ID08",
+          "sex": "Female",
+          "date_of_birth": "2023-01-22",
+          "genetic_background": "C57B",
+          "treatment": "no",
+          "notes": ""
+        },
+        {
+          "tag": "D35EA81904",
+          "row_index": 9,
+          "mouse_line": "Vglut2",
+          "genotype": "HET",
+          "subject_name": "ID09",
+          "sex": "Female",
+          "date_of_birth": "2023-01-22",
+          "genetic_background": "C57B",
+          "treatment": "no",
+          "notes": ""
+        },
+        {
+          "tag": "DC37E61A04",
+          "row_index": 10,
+          "mouse_line": "Vglut2",
+          "genotype": "HET",
+          "subject_name": "ID10",
+          "sex": "Female",
+          "date_of_birth": "2023-01-22",
+          "genetic_background": "C57B",
+          "treatment": "no",
+          "notes": ""
+        }
+      ]
+    },
+    "events": [
+      {
+        "name": "Light Stimulus Presentation",
+        "description": "Pulsed visual stimulation applied in specific cages.",
+        "bouts": [
+          {
+            "start": "2023-05-18T15:59:09+02:00",
+            "end": "2023-05-18T16:59:09+02:00",
+            "position": "cage_1"
+          },
+          {
+            "start": "2023-05-19T15:59:09+02:00",
+            "end": "2023-05-19T16:59:09+02:00",
+            "position": "cage_2"
+          }
+        ]
+      },
+      {
+        "name": "Saline Injection",
+        "description": "Baseline vehicle control injection across the full habitat.",
+        "bouts": [
+          {
+            "start": "2023-05-19T15:59:09+02:00",
+            "end": "2023-05-19T16:10:09+02:00",
+            "position": null
+          }
+        ]
+      },
+      {
+        "name": "Auditory Tone Test",
+        "description": "8 kHz continuous tone delivered to entire habitat.",
+        "bouts": [
+          {
+            "start": "2023-05-19T16:30:09+02:00",
+            "end": "2023-05-19T18:00:09+02:00",
+            "position": null
+          },
+          {
+            "start": "2023-05-18T16:30:09+02:00",
+            "end": "2023-05-18T18:00:09+02:00",
+            "position": null
+          }
+        ]
+      }
+    ],
+    "layout": {
+      "cages": [
+        {
+          "name": "cage_1",
+          "cell_id": "C1",
+          "cage_type": "social",
+          "antennas": [
+            "1",
+            "8"
+          ]
+        },
+        {
+          "name": "cage_2",
+          "cell_id": "C2",
+          "cage_type": "standard",
+          "antennas": [
+            "2",
+            "3"
+          ]
+        },
+        {
+          "name": "cage_3",
+          "cell_id": "C3",
+          "cage_type": "nonsocial",
+          "antennas": [
+            "4",
+            "5"
+          ]
+        },
+        {
+          "name": "cage_4",
+          "cell_id": "C4",
+          "cage_type": "standard",
+          "antennas": [
+            "6",
+            "7"
+          ]
+        }
+      ],
+      "tunnels": [
+        {
+          "name": "tunnel_1",
+          "tunnel_no": 1,
+          "start_cell_id": "C1",
+          "end_cell_id": "C2",
+          "dead_end": false,
+          "antenna_count": 2,
+          "antennas": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "name": "tunnel_2",
+          "tunnel_no": 2,
+          "start_cell_id": "C2",
+          "end_cell_id": "C3",
+          "dead_end": false,
+          "antenna_count": 2,
+          "antennas": [
+            "3",
+            "4"
+          ]
+        },
+        {
+          "name": "tunnel_3",
+          "tunnel_no": 3,
+          "start_cell_id": "C3",
+          "end_cell_id": "C4",
+          "dead_end": false,
+          "antenna_count": 2,
+          "antennas": [
+            "5",
+            "6"
+          ]
+        },
+        {
+          "name": "tunnel_4",
+          "tunnel_no": 4,
+          "start_cell_id": "C1",
+          "end_cell_id": "C4",
+          "dead_end": false,
+          "antenna_count": 2,
+          "antennas": [
+            "8",
+            "7"
+          ]
+        }
+      ],
+      "antenna_combinations": {
+        "1_2": "c1_c2",
+        "2_1": "c2_c1",
+        "3_4": "c2_c3",
+        "4_3": "c3_c2",
+        "5_6": "c3_c4",
+        "6_5": "c4_c3",
+        "8_7": "c1_c4",
+        "7_8": "c4_c1",
+        "1_1": "cage_1",
+        "1_8": "cage_1",
+        "8_1": "cage_1",
+        "8_8": "cage_1",
+        "2_2": "cage_2",
+        "2_3": "cage_2",
+        "3_2": "cage_2",
+        "3_3": "cage_2",
+        "4_4": "cage_3",
+        "4_5": "cage_3",
+        "5_4": "cage_3",
+        "5_5": "cage_3",
+        "6_6": "cage_4",
+        "6_7": "cage_4",
+        "7_6": "cage_4",
+        "7_7": "cage_4"
+      },
+      "tunnels_map": {
+        "c1_c2": "tunnel_1",
+        "c2_c1": "tunnel_1",
+        "c2_c3": "tunnel_2",
+        "c3_c2": "tunnel_2",
+        "c3_c4": "tunnel_3",
+        "c4_c3": "tunnel_3",
+        "c1_c4": "tunnel_4",
+        "c4_c1": "tunnel_4"
+      },
+      "junctions": [],
+      "editor": {
+        "cage_positions": {
+          "C1": [
+            400.0,
+            110.0
+          ],
+          "C2": [
+            670.0,
+            350.0
+          ],
+          "C3": [
+            400.0,
+            590.0
+          ],
+          "C4": [
+            130.0,
+            350.00000000000006
+          ]
+        },
+        "label_offsets": {}
+      }
+    },
+    "project_name": "Tsc2"
+  },
+  "acquisition": {
+    "boards": {
+      "board_1": {
+        "board_id": 1,
+        "active": true,
+        "hardware": "DeepEcoHAB RFID DAQ v1.0",
+        "com_port": "",
+        "baudrate": 115200,
+        "raw_log_enabled": true
+      },
+      "board_2": {
+        "board_id": 2,
+        "active": false,
+        "hardware": "DeepEcoHAB RFID DAQ v1.0",
+        "com_port": "",
+        "baudrate": 115200,
+        "raw_log_enabled": true
+      }
+    },
+    "camera": {
+      "width": 1280,
+      "height": 1280,
+      "fps": 30,
+      "segment_seconds": 3600,
+      "preview_enabled": true,
+      "preview_fps": 10,
+      "software_resize": false,
+      "encoding": "DeepEcoHAB_default (NVENC HQ)",
+      "trigger_source": "Line0",
+      "trigger_activation": "RisingEdge",
+      "trigger_delay_us": 24.0,
+      "trigger_overlap": "ReadOut",
+      "auto_cpu_fallback": true,
+      "fallback_after_failures": 3
+    },
+    "hardware_trigger": {
+      "enabled": true,
+      "com_port": "",
+      "baudrate": 115200,
+      "timing_mode": "frequency",
+      "frequency_hz": 30.0,
+      "interval_text": "00:00:00:033",
+      "pulse_ms": 4.0,
+      "train_mode": "duration",
+      "count": 12960000,
+      "duration_days": 5,
+      "duration_hours": 0,
+      "duration_minutes": 0,
+      "start_mode": "immediate",
+      "scheduled_hhmmss": "12:00:00"
+    },
+    "environment": {
+      "lighting": {
+        "enabled": false,
+        "com_port": "",
+        "baudrate": 115200,
+        "device_uid": null
+      },
+      "com_port": "COM1",
+      "started_iso": "2023-05-17T13:02:41+02:00",
+      "experiment_env_log_csv": "",
+      "last_record": {}
+    },
+    "launch": {
+      "board1": true,
+      "board2": false,
+      "camera": false,
+      "trigger": false,
+      "externally_triggered": true,
+      "delay_seconds": 2.0
+    },
+    "com_ports": {},
+    "ui": {
+      "events_row_count": 5
+    },
+    "_provenance": {
+      "software": "Acquisition_GUI_v2.0",
+      "generated_by": "generate_experiment_configs.py",
+      "generated_at": "2026-08-31T10:28:05.437902+02:00",
+      "recording_dir": "C:/Users/KonradD/Documents/deepecohab/data_catalog/Eco-HAB/vGLUT/Marcin_2023_05_17_Vglut2_HET_F",
+      "com_ports": [
+        "COM1"
+      ],
+      "acquisition_parts": [],
+      "sources": {
+        "layout.cages.cage_type": "raw_data/stimuli.txt",
+        "layout": "raw_data/Eco_hab_results_2026-04-17/config.toml",
+        "environment.light_start_hhmm": "2023_05_17_Vglut2_HET_Female_2025-08-29/config.toml",
+        "experiment.start_datetime": "raw_data/Eco_hab_results_2026-04-17/config.toml",
+        "animals.rows": "raw_data/Eco_hab_results_2026-04-17/config.toml",
+        "animals.n_mice (declared)": "raw_data/micenumber.txt"
+      },
+      "warnings": []
+    },
+    "channel_identity_format": "{physical_channel}{com_port}"
+  }
+}

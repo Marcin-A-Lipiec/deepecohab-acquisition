@@ -1,0 +1,71 @@
+{
+  "version": "8.1-DIAG1",
+  "based_on": "8.1",
+  "purpose": "Temporary passive bench diagnostics; calibration and detection rules unchanged; not a production fix",
+  "files": [
+    {
+      "path": "READ_ME_FIRST.md",
+      "sha256": "d2547a4f909f956b4c4c6c54c0a425f09dd2b902fb7b3e24b86280a5e2e74944"
+    },
+    {
+      "path": "VALIDATION.md",
+      "sha256": "6b90e4f1217268a21b38f112ef7f43276dd7cc23fc99697b3f8f5c72e36972c0"
+    },
+    {
+      "path": "firmware/Capacitive_Lickometer_UNO_R4_v8_1_Diagnostic/BenchDiagnostics.h",
+      "sha256": "4077e6405e9c7eacbc214e08155d37852b4f33f1b9bb76ed53f7a6834492682e"
+    },
+    {
+      "path": "firmware/Capacitive_Lickometer_UNO_R4_v8_1_Diagnostic/Capacitive_Lickometer_UNO_R4_v8_1_Diagnostic.ino",
+      "sha256": "f560cade9d0d609e3de5456b99cea24b9287e4f5e79bbb2f50f1f2e1cd4a3ada"
+    },
+    {
+      "path": "firmware/Capacitive_Lickometer_UNO_R4_v8_1_Diagnostic/LickometerCore.h",
+      "sha256": "9168198a6513484553584754c156c6d1bc82a02a3df7c1d7eadfd9a829c3e029"
+    },
+    {
+      "path": "firmware/Capacitive_Lickometer_UNO_R4_v8_1_Diagnostic/Mpr121Driver.h",
+      "sha256": "aff8c036e569b3034bfe8fc7c762617e8f8b87f67b160b1ef89e0d25e923df7f"
+    },
+    {
+      "path": "firmware/Capacitive_Lickometer_UNO_R4_v8_1_Diagnostic/RangeSearch.h",
+      "sha256": "d6a52661c47bd5ce5c46532f3f0233976b8535cb3effe56335022a8f8cd8c4d8"
+    },
+    {
+      "path": "firmware/Capacitive_Lickometer_UNO_R4_v8_1_Diagnostic/Settings.h",
+      "sha256": "0ecb333fdc1370abf8683b1da1bbee4e524f08e9930ac8c4c148204ccb0f677c"
+    },
+    {
+      "path": "tests/run_tests.py",
+      "sha256": "0b6ef93386454b74eb479318b4285192d920c2935b88a88438b9822ed6002291"
+    },
+    {
+      "path": "tests/standalone_stubs/Arduino.h",
+      "sha256": "27a884e954bf7ebb38a179492af1602052146cd959a178d2cf4b2ed84401fa3c"
+    },
+    {
+      "path": "tests/standalone_stubs/Arduino_LED_Matrix.h",
+      "sha256": "441f4198e0cb3790a24e760c1e479a42e2391abc0b333a90863cea5f858fa37c"
+    },
+    {
+      "path": "tests/standalone_stubs/WDT.h",
+      "sha256": "8afeb3e3b2ce24692368ac6983a9902dcc7a0a7f69260a3d895c19069749269e"
+    },
+    {
+      "path": "tests/standalone_stubs/Wire.h",
+      "sha256": "3939d3a33ad3f8480a40f6629abd46b5744d6ed87d34e870d1e2af25d68a44a7"
+    },
+    {
+      "path": "tests/test_standalone_lickometer_firmware.cpp",
+      "sha256": "9dbbf0a2e37e0e96164ce48633b18866d14cd98395a9f34c2139be06120d0815"
+    },
+    {
+      "path": "validation_logs/firmware_build.log",
+      "sha256": "be4f932d5d303d50a4c2bede280e5d5918918e5eed170c67605aea61735caab0"
+    },
+    {
+      "path": "validation_logs/test_results.txt",
+      "sha256": "dfae3f0fc0534cd20dd627e815a58c9e8e5d5651d80f65f27e37070ff896673e"
+    }
+  ]
+}

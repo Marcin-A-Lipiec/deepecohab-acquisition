@@ -1,0 +1,405 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Acquisition_GUI_v2.0 configuration v3 (draft and complete configurations)",
+  "type": "object",
+  "required": [
+    "version",
+    "recording",
+    "acquisition"
+  ],
+  "properties": {
+    "version": {
+      "const": 3
+    },
+    "recording": {
+      "type": "object",
+      "required": [
+        "name",
+        "recording_location",
+        "notes",
+        "timeline",
+        "cohort",
+        "layout",
+        "events"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "recording_location": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "cohort": {
+          "type": "object",
+          "required": [
+            "n_mice",
+            "animals"
+          ],
+          "properties": {
+            "n_mice": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "animals": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "tag",
+                  "row_index",
+                  "mouse_line",
+                  "genotype",
+                  "subject_name",
+                  "sex",
+                  "date_of_birth",
+                  "genetic_background",
+                  "treatment",
+                  "notes"
+                ],
+                "properties": {
+                  "tag": {
+                    "type": "string"
+                  },
+                  "row_index": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "mouse_line": {
+                    "type": "string"
+                  },
+                  "genotype": {
+                    "type": "string"
+                  },
+                  "subject_name": {
+                    "type": "string"
+                  },
+                  "sex": {
+                    "type": "string"
+                  },
+                  "date_of_birth": {
+                    "type": "string"
+                  },
+                  "genetic_background": {
+                    "type": "string"
+                  },
+                  "treatment": {
+                    "type": "string"
+                  },
+                  "notes": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "timeline": {
+          "type": "object",
+          "required": [
+            "start_datetime",
+            "end_datetime",
+            "recording_timezone",
+            "start_from",
+            "phases"
+          ],
+          "properties": {
+            "start_datetime": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "end_datetime": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "recording_timezone": {
+              "type": "string",
+              "minLength": 1
+            },
+            "start_from": {
+              "enum": [
+                "light_phase",
+                "dark_phase"
+              ]
+            },
+            "phases": {
+              "type": "object",
+              "required": [
+                "light_phase",
+                "dark_phase"
+              ],
+              "properties": {
+                "light_phase": {
+                  "type": "string",
+                  "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$"
+                },
+                "dark_phase": {
+                  "type": "string",
+                  "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$"
+                }
+              }
+            },
+            "phase_schedule": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "mode": {
+                      "const": "legacy_local"
+                    }
+                  },
+                  "required": [
+                    "mode"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "mode",
+                    "schedule_id",
+                    "anchor_phase",
+                    "anchor_datetime",
+                    "initial_utc_offset_seconds",
+                    "light_duration_seconds",
+                    "dark_duration_seconds"
+                  ],
+                  "properties": {
+                    "mode": {
+                      "const": "fixed_cycle"
+                    },
+                    "schedule_id": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "pattern": "^[A-Za-z0-9_-]{1,40}$"
+                    },
+                    "anchor_phase": {
+                      "const": "light_phase"
+                    },
+                    "anchor_datetime": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date-time"
+                    },
+                    "initial_utc_offset_seconds": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": -50400,
+                      "maximum": 50400
+                    },
+                    "light_duration_seconds": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 86399
+                    },
+                    "dark_duration_seconds": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 86399
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              ]
+            }
+          }
+        },
+        "layout": {
+          "type": "object",
+          "required": [
+            "cages",
+            "tunnels",
+            "junctions",
+            "antenna_combinations",
+            "tunnels_map",
+            "editor"
+          ],
+          "properties": {
+            "cages": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            },
+            "tunnels": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            },
+            "junctions": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            },
+            "antenna_combinations": {
+              "type": "object"
+            },
+            "tunnels_map": {
+              "type": "object"
+            },
+            "editor": {
+              "type": "object"
+            },
+            "antenna_combinations_interpolated": false,
+            "antenna_combinations_interp": false
+          }
+        },
+        "events": {
+          "type": "object",
+          "required": [
+            "event_types",
+            "bouts"
+          ],
+          "properties": {
+            "event_types": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "description"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "description": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "bouts": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "start",
+                  "end",
+                  "end_user_specified"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "start": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "end": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "end_user_specified": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "acquisition": {
+      "type": "object",
+      "required": [
+        "boards",
+        "camera",
+        "hardware_trigger",
+        "environment",
+        "launch",
+        "com_ports",
+        "_provenance"
+      ],
+      "properties": {
+        "boards": {
+          "type": "object"
+        },
+        "camera": {
+          "type": "object"
+        },
+        "hardware_trigger": {
+          "type": "object"
+        },
+        "environment": {
+          "type": "object",
+          "properties": {
+            "lighting": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "com_port": {
+                  "type": "string"
+                },
+                "baudrate": {
+                  "type": "integer",
+                  "minimum": 300
+                },
+                "device_uid": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "additionalProperties": true
+            }
+          }
+        },
+        "launch": {
+          "type": "object"
+        },
+        "com_ports": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "_provenance": {
+          "type": "object"
+        },
+        "_legacy_lickometer": {
+          "type": "array",
+          "description": "Archived legacy USB lickometer settings. Inactive history; never used to open a COM port or record separate CSVs."
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+}

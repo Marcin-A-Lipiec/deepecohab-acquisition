@@ -1,0 +1,25 @@
+sensing passed
+debounce passed
+noise passed
+stuck passed
+faults passed
+startup passed
+autorange passed
+readback passed
+range passed
+bus passed
+wraps passed
+daily passed
+low_valid passed
+large_bottle passed
+wide_baseline passed
+failed_low passed
+failed_high passed
+tune_link passed
+multi_search passed
+reasons passed
+range_bounds passed
+noisy_wait passed
+noisy_fault passed
+usb_backpressure passed
+24 scenarios passed

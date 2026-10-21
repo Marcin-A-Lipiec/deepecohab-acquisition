@@ -1,0 +1,3 @@
+WARNING: library WDT claims to run on renesas architecture(s) and may be incompatible with your current board which runs on renesas_uno architecture(s).
+Sketch uses 76292 bytes (29%) of program storage space. Maximum is 262144 bytes.
+Global variables use 18092 bytes (55%) of dynamic memory, leaving 14676 bytes for local variables. Maximum is 32768 bytes.

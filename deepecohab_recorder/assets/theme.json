@@ -1,0 +1,23 @@
+{
+  "source": "DeepEcoHab 0.6.0 app.css; additional semantic colors for acquisition graphics",
+  "light": {
+    "ground": "#f4f6f6", "surface": "#ffffff", "sunken": "#eef1f1",
+    "line": "#dde3e3", "line-strong": "#c9d2d2",
+    "ink": "#14201f", "ink-2": "#4a5857", "ink-3": "#6f7c7b",
+    "accent": "#1a7f91", "accent-ink": "#ffffff", "accent-soft": "#e0f1f3", "accent-text": "#146a79",
+    "good": "#1f7445", "good-soft": "#e2f2e8",
+    "warn": "#8f5c00", "warn-soft": "#fbefd9",
+    "bad": "#b4232f", "bad-soft": "#fbe5e7",
+    "device": "#7046aa", "preview": "#0e1414", "preview-ink": "#a3b1b0"
+  },
+  "dark": {
+    "ground": "#0e1414", "surface": "#151c1c", "sunken": "#1c2525",
+    "line": "#273232", "line-strong": "#344242",
+    "ink": "#e6eeed", "ink-2": "#a3b1b0", "ink-3": "#7b8988",
+    "accent": "#45b5c8", "accent-ink": "#06282e", "accent-soft": "#143238", "accent-text": "#6fcbd9",
+    "good": "#5cc58a", "good-soft": "#14301f",
+    "warn": "#e6b04a", "warn-soft": "#33270f",
+    "bad": "#f07a82", "bad-soft": "#3a1719",
+    "device": "#b99be9", "preview": "#0e1414", "preview-ink": "#a3b1b0"
+  }
+}

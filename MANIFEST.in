@@ -1,0 +1,20 @@
+include README.md ARCHITECTURE.md CHANGELOG.md TESTING.md THIRD_PARTY_NOTICES.md
+include LICENSE_STATUS.md CONTRIBUTING.md SECURITY.md .gitignore .gitattributes .editorconfig
+include requirements.txt uv.lock .python-version
+include install_windows.ps1 setup_windows.bat run_windows.bat
+include run_acquisition_gui.py run_deepecohab.py
+recursive-include docs *.md *.json
+recursive-include tools *.py
+recursive-include tests *.py *.cpp *.h *.json *.csv *.log *.txt *.md
+recursive-include examples *.json
+recursive-include firmware *.ino *.h *.cpp *.py *.md *.txt *.json *.log *.zip
+recursive-include .github *.yml *.md
+prune DeepEcoHAB_reference_repository
+prune Duplicate_test
+prune Timezone_bug
+prune validation
+prune .artifacts
+prune .venv
+prune .uv-cache
+prune .uv-python
+global-exclude __pycache__ *.py[cod]

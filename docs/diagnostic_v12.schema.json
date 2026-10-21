@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Preprocessing diagnostic v12",
+  "type": "object",
+  "required": [
+    "definitions",
+    "diagnostics_version",
+    "created_at",
+    "status",
+    "processing",
+    "experiment_timing",
+    "counts",
+    "recordings",
+    "clocks",
+    "recording_boundaries",
+    "outputs",
+    "transition_medians",
+    "inference_methods",
+    "interpolations"
+  ],
+  "properties": {
+    "diagnostics_version": {
+      "const": 12
+    },
+    "status": {
+      "type": "string"
+    },
+    "config_file": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "outputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "file",
+          "group",
+          "stream",
+          "sources",
+          "part",
+          "rows"
+        ],
+        "properties": {
+          "file": {
+            "type": "string"
+          },
+          "group": {
+            "type": "string"
+          },
+          "stream": {
+            "type": "string"
+          },
+          "device_name": {
+            "type": "string"
+          },
+          "relative_path": {
+            "type": "string"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rows": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "part": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "number",
+              "total"
+            ],
+            "properties": {
+              "number": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "total": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
