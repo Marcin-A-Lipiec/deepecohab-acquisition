@@ -34,17 +34,31 @@ def shortcut_locations(shell, directory=None, start_menu=False):
     return [folder / f"{APP_NAME}.lnk" for folder in folders]
 
 
+def shell_link(path=None):
+    """Use IShellLinkW/IPersistFile so paths never pass through an ANSI codec."""
+    import pythoncom
+    from win32com.shell import shell
+
+    link = pythoncom.CoCreateInstance(
+        shell.CLSID_ShellLink, None, pythoncom.CLSCTX_INPROC_SERVER,
+        shell.IID_IShellLink,
+    )
+    if path is not None:
+        link.QueryInterface(pythoncom.IID_IPersistFile).Load(str(path))
+    return link
+
+
 def change_shortcuts(*, directory=None, start_menu=False, remove=False, shell=None):
     if sys.platform != "win32":
         raise RuntimeError("Desktop shortcut installation is currently supported on Windows. Launch with deepecohab-acquisition on other systems.")
-    if shell is None:
+    if shell is None and directory is None:
         import win32com.client
         shell = win32com.client.Dispatch("WScript.Shell")
     paths = shortcut_locations(shell, directory, start_menu)
     for path in paths:
         if path.exists():
-            existing = shell.CreateShortcut(str(path))
-            if existing.Description != DESCRIPTION or Path(existing.TargetPath).name.lower() != COMMAND:
+            existing = shell_link(path)
+            if existing.GetDescription() != DESCRIPTION or Path(existing.GetPath(0)[0]).name.lower() != COMMAND:
                 raise FileExistsError(f"A different shortcut already exists: {path}")
     if remove:
         for path in paths:
@@ -60,14 +74,15 @@ def change_shortcuts(*, directory=None, start_menu=False, remove=False, shell=No
         os.replace(temporary, icon)
     for path in paths:
         path.parent.mkdir(parents=True, exist_ok=True)
-        shortcut = shell.CreateShortcut(str(path))
-        shortcut.TargetPath = str(target)
-        shortcut.Arguments = ""
-        shortcut.WorkingDirectory = str(directory)
-        shortcut.IconLocation = str(icon)
-        shortcut.Description = DESCRIPTION
-        shortcut.WindowStyle = 1
-        shortcut.Save()
+        shortcut = shell_link()
+        shortcut.SetPath(str(target))
+        shortcut.SetArguments("")
+        shortcut.SetWorkingDirectory(str(directory))
+        shortcut.SetIconLocation(str(icon), 0)
+        shortcut.SetDescription(DESCRIPTION)
+        shortcut.SetShowCmd(1)
+        import pythoncom
+        shortcut.QueryInterface(pythoncom.IID_IPersistFile).Save(str(path), 0)
     return paths
 
 

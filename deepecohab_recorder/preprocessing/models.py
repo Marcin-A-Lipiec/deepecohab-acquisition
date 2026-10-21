@@ -6,7 +6,7 @@ from pathlib import Path
 import re
 import math
 
-from deepecohab_recorder.clock import ExperimentClock
+from deepecohab_recorder.clock import ExperimentClock, iso_datetime
 from .raw_clock import RawClockError, fixed_utc_offset
 
 UTC = timezone.utc
@@ -36,7 +36,7 @@ def normalize_interpolation_mode(mode):
 def parse_pc(text: str, zone: str, naive_utc_offset: str = "") -> int:
     text = re.sub(r"(\d{2}:\d{2}:\d{2}):(\d+)$", r"\1.\2", text.strip())
     clock = ExperimentClock(zone)
-    value = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    value = iso_datetime(text)
     offset = fixed_utc_offset(naive_utc_offset)
     if value.tzinfo is None and offset is not None:
         value = value.replace(tzinfo=offset)

@@ -42,7 +42,7 @@ def main(argv=None):
     environment.pop('PYTHONPATH', None)
     environment.pop('PYTHONHOME', None)
     environment['QT_QPA_PLATFORM'] = 'offscreen'
-    environment['DEEPECOHAB_ACQUISITION_HOME'] = str(directory / 'app data ł')
+    environment['DEEPECOHAB_ACQUISITION_HOME'] = str(directory / 'app data ł漢字')
     environment['PYTHONIOENCODING'] = 'utf-8'
     outside = directory / 'outside source with spaces ł'
     outside.mkdir(exist_ok=True)
@@ -100,29 +100,32 @@ def main(argv=None):
         assert report['doctor']['software_version'] == __version__
         assert report['doctor']['core_ready']
         shortcut_command = scripts / 'deepecohab-acquisition-shortcut.exe'
-        shortcut_directory = directory / 'Desktop with spaces ł'
+        shortcut_directory = directory / 'Desktop with spaces ł漢字'
         run('shortcut-create', [shortcut_command, '--directory', shortcut_directory])
-        import win32com.client
-        shell = win32com.client.Dispatch('WScript.Shell')
+        import pythoncom
+        from win32com.shell import shell as windows_shell, shellcon
         link = shortcut_directory / f'{APP_NAME}.lnk'
-        saved = shell.CreateShortcut(str(link))
-        assert Path(saved.TargetPath) == launcher
-        assert not saved.Arguments
-        assert Path(saved.WorkingDirectory) == Path(environment['DEEPECOHAB_ACQUISITION_HOME'])
-        assert Path(saved.IconLocation.split(',')[0]).is_file()
-        report['shortcut'] = dict(path=str(link), target=saved.TargetPath,
-                                  working_directory=saved.WorkingDirectory, icon=saved.IconLocation)
-        report['shortcut_launch'] = smoke('shortcut-target-smoke', Path(saved.TargetPath))
+        saved = pythoncom.CoCreateInstance(windows_shell.CLSID_ShellLink, None,
+                    pythoncom.CLSCTX_INPROC_SERVER, windows_shell.IID_IShellLink)
+        persistence = saved.QueryInterface(pythoncom.IID_IPersistFile)
+        persistence.Load(str(link))
+        target = saved.GetPath(0)[0]
+        assert Path(target).samefile(launcher)
+        assert not saved.GetArguments()
+        assert Path(saved.GetWorkingDirectory()).samefile(Path(environment['DEEPECOHAB_ACQUISITION_HOME']))
+        assert Path(saved.GetIconLocation()[0]).is_file()
+        report['shortcut'] = dict(path=str(link), target=target,
+                                  working_directory=saved.GetWorkingDirectory(), icon=saved.GetIconLocation())
+        report['shortcut_launch'] = smoke('shortcut-target-smoke', Path(target))
         # Exercise Windows' actual .lnk association with no redirected stdio,
         # as an Explorer double-click does. Use a temporary smoke argument and
         # offscreen Qt so acceptance does not start a visible interactive app.
-        from win32com.shell import shell as windows_shell, shellcon
         import win32event
         import win32process
         native_result = directory / 'native-shortcut-smoke.json'
         native_result.unlink(missing_ok=True)
-        saved.Arguments = subprocess.list2cmdline(['--smoke-test', str(native_result)])
-        saved.Save()
+        saved.SetArguments(subprocess.list2cmdline(['--smoke-test', str(native_result)]))
+        persistence.Save(str(link), 0)
         original_environment = os.environ.copy()
         handle = None
         try:
@@ -146,8 +149,8 @@ def main(argv=None):
             os.environ.update(original_environment)
             if handle:
                 handle.Close()
-            saved.Arguments = ''
-            saved.Save()
+            saved.SetArguments('')
+            persistence.Save(str(link), 0)
         run('video-help', [scripts / 'deepecohab-verify-video.exe', '--help'])
         source = outside / 'historical_raw_serial.jsonl'
         output = outside / 'recovered.bin'

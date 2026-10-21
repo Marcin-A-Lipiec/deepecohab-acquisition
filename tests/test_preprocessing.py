@@ -597,11 +597,11 @@ class PreprocessingTests(unittest.TestCase):
         config.write_text(json.dumps(self.cfg))
         spec = self.raw("one.txt", [(0, "A", TAG), (100, "A", TAG)])
         self.process([spec], config_path=str(config))
-        self.assertEqual(self.output, self.root / "out")
+        self.assertTrue(self.output.samefile(self.root / "out"))
         self.assertEqual(self.result["outputs"][0]["file"], name + ".data.csv")
         first_hash = hashlib.sha256((self.output / (name + ".data.csv")).read_bytes()).hexdigest()
         self.process([spec], config_path=str(config))
-        self.assertEqual(self.output, self.root / "out")
+        self.assertTrue(self.output.samefile(self.root / "out"))
         self.assertEqual(hashlib.sha256((self.root / "out" / (name + ".data.csv")).read_bytes()).hexdigest(), first_hash)
 
     def test_scan_same_port_shares_clock_group_and_numbers_recording_parts(self):

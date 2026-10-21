@@ -3,9 +3,31 @@
 from __future__ import annotations
 
 from datetime import datetime, time, timedelta, timezone
+import re
 from zoneinfo import ZoneInfo
 
 UTC = timezone.utc
+
+
+def iso_datetime(text: str) -> datetime:
+    """Parse recorded ISO datetimes consistently on Python 3.10 and newer.
+
+    Python 3.10 accepts only three or six fractional-second digits. Padding
+    shorter fractions preserves the exact instant; timezone policy stays with
+    the caller. Keep the native fast path for existing recorder timestamps.
+    """
+    text = text.strip().replace("Z", "+00:00")
+    try:
+        return datetime.fromisoformat(text)
+    except ValueError:
+        padded = re.sub(
+            r"(\d{2}:\d{2}:\d{2})\.([0-9]{1,6})(?=[+-]|$)",
+            lambda match: match[1] + "." + match[2].ljust(6, "0"),
+            text,
+        )
+        if padded == text:
+            raise
+        return datetime.fromisoformat(padded)
 
 
 class ExperimentClock:
@@ -23,7 +45,7 @@ class ExperimentClock:
         return self.now().isoformat(timespec="microseconds")
 
     def parse(self, text: str, *, allow_naive: bool = False) -> datetime:
-        value = datetime.fromisoformat(text.strip().replace("Z", "+00:00"))
+        value = iso_datetime(text)
         if value.tzinfo is None:
             if not allow_naive:
                 raise ValueError(

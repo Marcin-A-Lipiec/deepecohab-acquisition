@@ -91,46 +91,45 @@ def test_all_pages_and_worker_completion_cancellation_from_other_cwd(tmp_path, m
 
 @pytest.mark.skipif(sys.platform != 'win32', reason='Native Windows shortcuts')
 def test_shortcut_unicode_spaces_update_remove_preserve_user_data(tmp_path, monkeypatch):
-    import win32com.client
-    shell = win32com.client.Dispatch('WScript.Shell')
-    monkeypatch.setenv('DEEPECOHAB_ACQUISITION_HOME', str(tmp_path / 'app data ł'))
+    monkeypatch.setenv('DEEPECOHAB_ACQUISITION_HOME', str(tmp_path / 'app data ł漢字'))
     # Use an actual installed GUI wrapper on the first creation.
     launcher = Path(sysconfig.get_path('scripts')) / desktop.COMMAND
     assert launcher.is_file()
-    folder = tmp_path / 'Desktop with spaces ł'
-    link = desktop.change_shortcuts(directory=folder, shell=shell)[0]
-    saved = shell.CreateShortcut(str(link))
-    assert Path(saved.TargetPath) == launcher.resolve()
-    assert Path(saved.WorkingDirectory) == tmp_path / 'app data ł'
-    assert saved.Arguments == ''
-    assert Path(saved.IconLocation.split(',')[0]).is_file()
-    sentinel = tmp_path / 'app data ł/user-data.txt'
+    folder = tmp_path / 'Desktop with spaces ł漢字'
+    link = desktop.change_shortcuts(directory=folder)[0]
+    saved = desktop.shell_link(link)
+    assert Path(saved.GetPath(0)[0]).samefile(launcher)
+    assert Path(saved.GetWorkingDirectory()).samefile(tmp_path / 'app data ł漢字')
+    assert saved.GetArguments() == ''
+    assert Path(saved.GetIconLocation()[0]).is_file()
+    sentinel = tmp_path / 'app data ł漢字/user-data.txt'
     sentinel.write_text('keep', encoding='utf-8')
-    updated = tmp_path / 'new environment with spaces' / desktop.COMMAND
+    updated = tmp_path / 'new environment with spaces ł漢字' / desktop.COMMAND
     updated.parent.mkdir()
     updated.touch()
     monkeypatch.setattr(desktop, 'installed_launcher', lambda: updated)
-    assert desktop.change_shortcuts(directory=folder, shell=shell) == [link]
-    assert Path(shell.CreateShortcut(str(link)).TargetPath) == updated
-    desktop.change_shortcuts(directory=folder, remove=True, shell=shell)
+    assert desktop.change_shortcuts(directory=folder) == [link]
+    assert Path(desktop.shell_link(link).GetPath(0)[0]).samefile(updated)
+    desktop.change_shortcuts(directory=folder, remove=True)
     assert not link.exists()
     assert sentinel.read_text(encoding='utf-8') == 'keep'
-    desktop.change_shortcuts(directory=folder, shell=shell)
+    desktop.change_shortcuts(directory=folder)
     assert sentinel.read_text(encoding='utf-8') == 'keep'
 
 
 @pytest.mark.skipif(sys.platform != 'win32', reason='Native Windows shortcuts')
 @pytest.mark.parametrize('remove', [False, True])
 def test_shortcut_conflict_does_not_overwrite_or_remove_another_app(tmp_path, monkeypatch, remove):
-    import win32com.client
-    shell = win32com.client.Dispatch('WScript.Shell')
+    import pythoncom
     monkeypatch.setenv('DEEPECOHAB_ACQUISITION_HOME', str(tmp_path / 'app data'))
-    link = tmp_path / f'{desktop.APP_NAME}.lnk'
-    foreign = shell.CreateShortcut(str(link))
-    foreign.TargetPath = str(Path(sys.executable))
-    foreign.Description = 'Another application'
-    foreign.Save()
+    folder = tmp_path / 'Desktop ł漢字'
+    folder.mkdir()
+    link = folder / f'{desktop.APP_NAME}.lnk'
+    foreign = desktop.shell_link()
+    foreign.SetPath(str(Path(sys.executable)))
+    foreign.SetDescription('Another application')
+    foreign.QueryInterface(pythoncom.IID_IPersistFile).Save(str(link), 0)
     before = link.read_bytes()
     with pytest.raises(FileExistsError, match='different shortcut'):
-        desktop.change_shortcuts(directory=tmp_path, remove=remove, shell=shell)
+        desktop.change_shortcuts(directory=folder, remove=remove)
     assert link.read_bytes() == before

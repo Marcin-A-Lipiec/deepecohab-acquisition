@@ -2,6 +2,13 @@
 
 ## 1.0.0 — first public release (prepared locally; unpublished)
 
+- Fixed Unicode Windows shortcut creation, update and ownership checks using
+  the native Unicode shell-link API. Retained double-click launch and protected
+  other applications' shortcuts. Added Unicode-path installed-wheel checks.
+- Made valid fractional-second timestamps parse consistently on Python 3.10–3.12
+  without changing recorded instants, timezone safeguards or output schemas.
+- Corrected a regression assertion to recognize Windows short and long paths
+  naming the same output directory; retained output-content verification.
 - Added a step-by-step Windows README covering uv, installation, camera setup,
   update notifications, updating, rollback and removal. Preserved acquisition
   instructions in docs/USER_GUIDE.md.
