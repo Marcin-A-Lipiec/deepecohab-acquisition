@@ -65,11 +65,6 @@ installs its wheel with that same release's tested dependency constraints, and
 creates Desktop and Start menu shortcuts. It does not install an unfinished
 development branch. No Git installation is needed.
 
-**A maintainer must publish a release and attach its wheel first.** Merely seeing
-the source files on GitHub does not make these release-install commands available.
-If there is no public release yet, use a supplied source folder as described in
-[section 11](#11-install-a-downloaded-source-folder).
-
 Download the installation helper:
 
 ```powershell
