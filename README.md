@@ -1,179 +1,390 @@
-# DeepEcoHab Acquisition 1.0.0
+# DeepEcoHAB Acquisition
 
-Windows Qt application for RFID/TTL and camera acquisition, experiment metadata
-and preprocessing before DeepEcoHab analysis. Install with uv and launch from a
-Desktop icon. Startup logging and a cancellable **System check** help with
-dependency setup. The Light, Dark and System themes share DeepEcoHab's colors,
-Geist typography and icons. A collapsible sidebar keeps every acquisition page
-mounted, with experiment identity, live activity and a pinned **Stop all** control
-in the header. Recording and verification share saved FFmpeg/ffprobe paths.
-Layout background dragging works after Fit; middle-drag pans in every layout
-tool. Display bursts and repeated camera frames use bounded, cached updates.
-See [docs/PERFORMANCE.md](docs/PERFORMANCE.md) for measured changes and
-[ARCHITECTURE.md](ARCHITECTURE.md) for module boundaries and extension guidance.
+**Version 1.0.0** — Windows software for EcoHAB RFID/TTL recording, cameras,
+lighting, experiment metadata and data preprocessing for DeepEcoHAB analysis.
+Install it once, then open it by double-clicking its Desktop icon. You do not
+need Python knowledge, a GitHub account or Git for the normal installation.
 
-Scientific formats remain config v8, acquisition GUI state v1, diagnostics v12
-and Parquet schema v5. Current contracts are documented in
-[docs/CONFIG_V8.md](docs/CONFIG_V8.md) and [docs/DIAGNOSTIC_V12.md](docs/DIAGNOSTIC_V12.md).
-Software version is independent of these formats.
+This guide targets **64-bit Windows 10/11 and Python 3.12**. uv downloads Python
+and the required Python libraries for you. The package permits Python 3.10–3.12;
+a camera's vendor wheel must match the selected Python version. Other operating
+systems and their hardware integrations have not been validated.
 
-Version **1.0.0** is the first public release number; earlier 3.2.x numbers identify
-internal modernization stages. The intended repository is
-[`Marcin-A-Lipiec/deepecohab-acquisition`](https://github.com/Marcin-A-Lipiec/deepecohab-acquisition).
-This copy is prepared locally; GitHub publication has not taken place. The original
-code's license is [still being decided](LICENSE_STATUS.md).
+- [Install uv](#1-install-uv-once-per-computer)
+- [Install the application](#2-install-deepecohab-acquisition)
+- [Camera and hardware setup](#3-optional-camera-and-hardware-setup)
+- [Open and check the application](#4-open-and-check-the-application)
+- [Find out about updates](#5-find-out-about-updates)
+- [Update](#updating)
+- [Install an older version](#7-return-to-an-earlier-version)
+- [Uninstall](#8-uninstall)
+- [Troubleshooting](#9-troubleshooting)
+- [All routine commands](#10-command-reference)
+- [Install a downloaded source folder](#11-install-a-downloaded-source-folder)
 
-## Start on Windows
+## Before you begin
 
-Install [uv](https://docs.astral.sh/uv/getting-started/installation/), open
-PowerShell in this application folder, and run:
+Use a normal **PowerShell** window, under the Windows account that will run the
+experiment. Administrator mode is normally unnecessary.
+
+1. Open Start, type **PowerShell**, then open **Windows PowerShell** or PowerShell.
+2. Copy a command from a code box, paste it into PowerShell and press Enter.
+3. Wait until the `PS C:\...>` prompt returns before entering the next command.
+4. Copy only the command, not the prompt or the triple-backtick markers.
+5. If a command reports an error, stop and use [Troubleshooting](#9-troubleshooting).
+
+Keep experiment recordings in their own experiment folders, outside application
+source folders and Python/tool environments. Updating or uninstalling the tool
+does not delete these experiments or the application's separate user preferences.
+
+## 1. Install uv (once per computer)
+
+uv manages the application's Python installation and libraries. Run the official
+[uv installer](https://docs.astral.sh/uv/getting-started/installation/):
 
 ```powershell
-uv tool install --python 3.12 --constraints requirements.txt .
-deepecohab-acquisition-shortcut
+powershell -ExecutionPolicy Bypass -c "irm https://astral.sh/uv/install.ps1 | iex"
 ```
 
-Double-click **DeepEcoHab Acquisition** on the Desktop. Python and the declared
-Python dependencies are installed into a dedicated tool environment. If a
-command is not found, run `uv tool update-shell` and open a new terminal.
-The local installer can perform both steps using the tested dependency pins:
-`powershell -ExecutionPolicy Bypass -File .\install_windows.ps1`.
+This downloads and runs Astral's uv installer. The execution-policy option applies
+to that PowerShell process; it does not permanently change the computer's policy.
 
-[docs/INSTALLATION.md](docs/INSTALLATION.md) includes the exact v1.0.0 release-wheel
-and GitHub installation commands to use after publication, camera prerequisites,
-updates, removal and troubleshooting. The local commands above work with this copy.
-Python 3.12 on 64-bit Windows is the validated target;
-package metadata also permits Python 3.10–3.11.
+**Close PowerShell and open a new PowerShell window.** Then check:
 
-For cameras, separately install the matching Teledyne Spinnaker SDK/SpinView and
-vendor PySpin wheel, plus **ffmpeg.exe and ffprobe.exe** selected in **System check**
-or available on PATH. RFID/TTL and
-preprocessing work without the camera SDK. Firmware/USB drivers are described
-in [docs/FIRMWARE.md](docs/FIRMWARE.md).
+```powershell
+uv --version
+```
 
-Open **Experiment → System check** in the header to check the computer, test video encoders
-and read installed setup help. The equivalent command is
-`deepecohab-acquisition-cli doctor --encode-test`. See
-[docs/CAMERA_SETUP.md](docs/CAMERA_SETUP.md) for SDK/wheel compatibility and
-physical acceptance requirements.
+You should see a uv version number. If uv was already installed and this command
+works, continue to the next section.
 
-The existing `setup_windows.bat` and `run_windows.bat` support a local `.venv`
-installation. Source launchers `run_acquisition_gui.py` and `run_deepecohab.py`
-and console aliases `acquisition-gui` / `deepecohab-recorder` remain available.
+## 2. Install DeepEcoHAB Acquisition
 
-Choose **Theme: System, Light or Dark** at the bottom right. System follows the
-desktop appearance; your selection is retained across restarts and reinstalls.
-Fonts, icons and both themes are bundled in the installation and work offline.
-Switching themes preserves unsaved edits, layout placement, camera previews and
-running device controls. See [docs/APPEARANCE.md](docs/APPEARANCE.md).
+The recommended installer selects the latest **published stable GitHub Release**,
+installs its wheel with that same release's tested dependency constraints, and
+creates Desktop and Start menu shortcuts. It does not install an unfinished
+development branch. No Git installation is needed.
 
-Use the sidebar's **Experiment**, **Devices** and **Workflow** groups to navigate.
-On a narrow window it becomes an icon rail; its bottom button opens a menu with
-all page names. **Ctrl+Tab** / **Ctrl+Shift+Tab** cycle pages, **Ctrl+B** controls
-the sidebar, and **Ctrl+S** / **Ctrl+O** save/load the full experiment configuration.
-The header and activity/error log stay visible on every page. See
-[docs/NAVIGATION.md](docs/NAVIGATION.md).
+**A maintainer must publish a release and attach its wheel first.** Merely seeing
+the source files on GitHub does not make these release-install commands available.
+If there is no public release yet, use a supplied source folder as described in
+[section 11](#11-install-a-downloaded-source-folder).
 
-## Prepare an experiment
+Download the installation helper:
 
-- **Setup:** enter the experiment name, project name, save directory, recording location, timezone and analysis start phase. Experiment recording times are automatic by default. Check **Set start and end datetimes manually** to enable the two datetime fields, then save both overrides. Load/Save experiment configuration operates on all tabs. Selecting a directory with a compatible configuration loads it automatically. The collapsed Quick start section explains new and archived experiments and how recording times are determined.
-- **Acquisition:** set the connected boards' COM ports and hardware versions. v1.5 uses physical **A–P** channel names; v1.0 uses **0–9/A–F**; the old board displays **1–8**. Refreshing ports preserves the current choice, including a blank one. Archived data does not require a connected board.
-- **Animal details:** enter or match RFID tags and complete mouse line, genotype, genetic background, sex and birth date. Subject name, Treatment and Notes are optional; blank Subject name and Treatment save as null. Dates use `YYYY-MM-DD`; there is no Age field. Tag strings are retained as supplied; use Match tag to check the identifiers actually reported by your boards.
-- **EcoHAB layout:** create cages and tunnels, then assign each antenna to a physical channel and Board number. Identifiers look like `1-1`, `8-2` or `E-1`; the hyphen is inserted automatically. For archived boards, select Manual / archived board and use the same Board number as in Data preprocessing. The four-cage preset supplies geometry with unassigned antennas. Double-click a cage, tunnel or antenna to edit it. Labels can be dragged independently, and cage/antenna graphics remain readable while zooming. Drag empty canvas space to pan; middle-drag pans over any item or tool. Fit restores automatic framing. On small displays use the table/section scrollbars.
-- **Environmental settings:** choose the initial light/dark phase hours and configure optional Arduino lighting control. All cycles use fixed elapsed time; daylight-saving changes cannot shorten, lengthen or realign them. There is no local-clock scheduling mode. Timezone and analysis start phase are on Setup. Temperature/humidity recording remains a future extension.
-- **Events:** enter event types and bouts. Repeated names must use one description. A name/description without times defines an unscheduled type. A bout requires a start. Leaving the end blank means “until the RFID recording ends”; GUI completion flags are retained in the secondary config. Select optional devices for each event. Selected bout compartments are saved as lists; no position (Whole habitat) saves as null. Experiment notes are saved with the Events tab.
-- **Data preprocessing:** preprocess raw recordings before downstream analysis. Place archived files in `raw_antenna_reads`; each immediate subfolder is one board's continuous recording. Assign distinct Board numbers to simultaneous historical boards, and use the same recording part for them. No COM label is needed; Port metadata is read-only connection information. Save these assignments with the metadata. Before processing, the GUI checks layout antenna labels and offers to add missing board suffixes when each antenna has one possible board. Shared channel numbers across boards require manual assignment in EcoHAB layout and a configuration save. See [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md).
-- Use the prominent Load/Save buttons in each metadata tab, or the full-config controls at the top. Section saves preserve the other sections. **Save experiment configuration** saves all current tab values. Incomplete drafts can be saved; **Check configuration** checks the on-disk metadata, including archived board assignments. Starting RFID also checks the actual acquisition hardware settings.
+```powershell
+Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/Marcin-A-Lipiec/deepecohab-acquisition/main/install_windows.ps1" -OutFile "$env:TEMP\deepecohab-install.ps1"
+```
 
-The main metadata filename is **<Experiment_name>.config.json**, in the **Experiment's save directory**. It links to **<Experiment_name>.acquisition_gui_state.json** and, after successful preprocessing, **<Experiment_name>.diagnostic.json** in the same folder. Load only the main config; keep the experiment folder together when moving it. Older names and the legacy `acqusition` spelling remain readable. Loading leaves sources unchanged. Saving writes the version 8 pair under the new names; successful migration retires the previous main file and its owned sidecar. No routine history snapshots are created. See [docs/CONFIG_V8.md](docs/CONFIG_V8.md) for the downstream contract.
+Then run it:
 
-## Start and stop
+```powershell
+powershell -ExecutionPolicy Bypass -File "$env:TEMP\deepecohab-install.ps1" -ReleaseVersion latest -StartMenu
+```
 
-RFID recording can start with missing or incomplete experiment metadata, without a metadata confirmation. Hardware settings and port ownership are still checked before devices start. Raw data and original timing are retained in a run journal; a later metadata save attaches the original RFID start time. Animal details can be saved incrementally, including blank fields. **Check configuration** remains available for a readiness review.
+Wait for the success message. uv supplies Python and the declared libraries in
+an isolated application environment. The normal installation needs an internet
+connection; subsequent GUI launches do not. Download time depends on the connection.
 
-Before preprocessing, missing metadata produces a **Proceed at your own risk** choice. Cancel returns to editing. Proceeding with an incomplete RFID tag list disables tag filtering for that job, preserving all observed tags; an incomplete or unverified layout disables interpolation. These decisions are recorded in diagnostics. Correct inconsistent device wiring and conflicting metadata values before saving or processing.
+Make the commands available in future PowerShell windows:
 
-For legacy timestamps without UTC offsets, timezone transitions can require an explicit interpretation. An exceptional option is available under **Data preprocessing → Advanced options → Board clocks**. It is off by default; enabling it reveals the explanation and fields for verified fixed recording-PC offsets. An unresolved source can be added for inspection, but processing stops until its clock is resolved. Do not infer a fixed offset from the error itself. See [recording clock guidance](docs/COMPATIBILITY.md#recording-pc-clocks-and-daylight-saving-time).
+```powershell
+uv tool update-shell
+```
 
-In automatic mode, the first successfully initialized RFID board defines the whole experiment's `recording.timeline.start_datetime`. Starting another board, restarting recording or reopening the same experiment preserves that first start. `end_datetime` follows the latest normal RFID stop across runs. A detected failure marks the end for recovery; after a crash or power loss, preprocessing the complete experiment uses the last valid raw RFID PC datetime. For archives without acquisition journals, raw detections supply missing bounds. TTLs, cameras and trigger controllers do not define these times. Select all experiment raw sources when recovering bounds; known omitted sources leave the saved bounds unchanged.
+Close PowerShell and open it again. Confirm the installed version:
 
-Manual overrides on Setup remain selected during recording and preprocessing. Automatic evidence is retained separately, so unchecking the override and saving returns to automatic times. These metadata values do not trim exported data. Restarting RFID after all RFID boards stop still creates a separate acquisition run and journal. Writers may continue draining after a normal stop boundary.
+```powershell
+deepecohab-acquisition-cli --version
+```
 
-In a coordinated launch, the camera and encoder become ready before the external trigger is armed. The configured delay starts after readiness; settings are frozen when the command is requested. A failure partway through launch is reported and any devices already recording remain visible and can be stopped individually.
+The installer copies the application into uv's environment. Moving/deleting a
+downloaded installer or source ZIP later does not break that installed copy.
 
-Experiment name, directory and timezone are locked while a device or tag-matching connection is active. Device settings are locked while its workers are active. Closing the application requests stops and waits for file writers; a timed-out worker stays locked instead of being reported as safely closed.
+## 3. Optional camera and hardware setup
 
-**Physical-output behavior:** stopping USB acquisition does not necessarily stop the independently powered hardware. Legacy trigger firmware may have no STOP command; the GUI reports that its programmed train may continue until completion or hardware reset. STOP-capable protocol support is retained, but its historical optional sketch is absent from this copy. The standalone lickometer senses and drives BNC outputs whenever powered; RFID DAQ rising-edge inputs record the contacts. It has no production USB acquisition tab or separate CSV writer. Lighting v5 also continues its schedule when USB recording stops or the GUI closes. No firmware is flashed automatically. See [docs/FIRMWARE.md](docs/FIRMWARE.md) for the actual inventory and the v8.1 diagnostic build's limitations.
+**RFID/TTL and preprocessing do not require camera software.** The following
+components are installed separately when the relevant hardware is used:
 
-## Files written
-
-| Location | Contents |
+| Component | What to do |
 |---|---|
-| `<Experiment_name>.config.json` | Canonical scientific metadata and relative file links |
-| `<Experiment_name>.acquisition_gui_state.json` | Hardware and editor settings, grouping choices, recording epochs, health summaries and camera inventories |
-| `<Experiment_name>.data.parquet` / `.csv` | Main movement RFID output |
-| `<Experiment_name>.device_antenna1.parquet` / `.csv` | A numbered device RFID group and its associated TTL inputs; further groups use 2, 3, etc. |
-| `<Experiment_name>.TTL_data1.parquet` / `.csv` | A numbered group of instantaneous TTL events; further groups use 2, 3, etc. |
-| `<Experiment_name>.diagnostic.json` | Completed preprocessing checks, all transit medians, recording coverage and output manifest |
-| `DATATYPE READ ME.txt` | Concise descriptions of actual files and output-group inputs |
-| `raw_antenna_reads/` | Original RFID/TTL streams, one file per board start; archives may use a subfolder per board |
-| Experiment root | Camera video segments, timestamps and frame ledger |
+| Teledyne Spinnaker SDK and SpinView | Install the manufacturer's Windows package. Confirm that the camera works in SpinView. |
+| Teledyne PySpin wheel | Obtain the vendor's `.whl` matching your SDK, Windows x64 and selected Python version; Python 3.12 normally requires `cp312`. SpinView alone does not install this Python interface. |
+| FFmpeg and ffprobe | Download a Windows build linked from the [official FFmpeg page](https://ffmpeg.org/download.html), extract it, then select both executable paths in **Experiment → System check**. |
+| Board USB drivers and firmware | Follow the board-specific [firmware guide](docs/FIRMWARE.md). Firmware is not flashed automatically. |
 
-Data preprocessing defaults to the experiment root. The diagnostic and linked config pair always stay there, even if a custom data-output folder is selected. When Merge recording parts is disabled, the type includes a part suffix, for example `<Experiment_name>.data_part01.parquet`.
+These vendor runtimes, drivers and executables are not supplied by the Python
+installation. Do not install the unrelated package named `pyspin` from PyPI.
+See the [camera setup guide](docs/CAMERA_SETUP.md) and
+[Teledyne's PySpin instructions](https://www.teledynevisionsolutions.com/support/support-center/technical-guidance/iis/installing-pyspin-for-the-spinnaker-sdk/).
 
-Set each antenna role in **EcoHAB layout**. Main is the default. Device reveals its type, optional description, position, generated type-position name and optional board-qualified TTL association. Devices with the same generated name share a numbered device file, including linked TTLs. Tunnels without assigned main antennas are kept in GUI state and omitted from the main tunnel list. **Manage RFID and TTL output grouping** previews these defaults and can override each input independently, including detaching TTLs. Restore layout defaults to clear overrides. Unassociated TTLs default to TTL_data1. Only groups with records create files. TTLs never enter movement data and are never stitched or interpolated.
+To include the vendor wheel, close the GUI and run the installer with its exact
+downloaded filename. **Replace the example path below** with your actual `.whl`:
 
-Successful reprocessing replaces the current generated file set and retires obsolete outputs from its previous diagnostic manifest. Raw/unrelated files and externally modified generated data are protected. Failed/cancelled jobs keep previous completed results. A temporary recovery journal restores an interrupted publication on reload or retry. Existing archived folders and logs are not swept or deleted. New runs create no metadata CSV, `acquisition/`, `session_configs/`, `diagnostic_logs/` or default `preprocessed_data/` folder.
-
-Raw acquisition RFID CSV rows remain five semicolon-separated columns:
-
-```text
-physical_source;tag_or_ttl_payload;device_counter;pc_datetime;board_id
-P-1;D5969C1A;07DF6948;2026-09-10T13:20:00.123456+02:00;1
-TTL2-1;00000002;07DF6950;2026-09-10T13:20:00.123456+02:00;1
+```powershell
+powershell -ExecutionPolicy Bypass -File "$env:TEMP\deepecohab-install.ps1" -ReleaseVersion latest -Force -StartMenu -PySpinWheel "C:\Downloads\YOUR_MATCHING_TELEDYNE_WHEEL.whl"
 ```
 
-New source identifiers use the physical channel and logical Board number, independent of the USB COM port. Legacy `A_1_COM5`, `ACOM5` and bare labels remain readable; conversion requires an unambiguous board assignment. Changing USB ports does not rename a board. Device counters and tag/TTL payloads are preserved, and host calendar timestamps include the experiment timezone offset. Acquisition counters, RFID start/stop epochs and a bounded sample of malformed records are saved in GUI state, then included in preprocessing diagnostics. Routine serial-byte copies are no longer generated. Historical raw logs remain readable with `tools/recover_serial.py`.
+If the vendor wheel needs Python 3.10 or 3.11, add `-PythonVersion 3.10` or
+`-PythonVersion 3.11` to that command. Retain the same Python choice and matching
+wheel on future updates. Keep the wheel outside uv's application environment.
 
-Preprocessed **Parquet** columns, in order, are `datetime`, `antenna`, `time_under`, `animal_id`, `internal_board_timestamp`, `inserted`. The last field is Boolean: True for rows created by interpolation, False for observations derived from raw records. `antenna` is a dictionary-encoded string field read by Polars as Categorical, `time_under` is a microsecond duration, and `animal_id` is a dictionary categorical with Polars Enum metadata. Antenna labels such as `1-1` keep their exact text values. Both timestamp columns use microseconds and the experiment timezone. Legacy sources without a board counter retain null internal board timestamps. Preprocessed **CSV** columns are `antenna`, `animal_id`, `datetime`, `time_spent`, `internal_board_timestamp`, `inserted`; `time_spent` remains integer milliseconds. Device RFIDs and their linked TTLs share device outputs by default; custom overrides can separate them. Completed settings are linked from the diagnostic to GUI state. Coverage, interruptions and interpolation details remain in the diagnostic; integrity checks stay internal.
+## 4. Open and check the application
 
-Camera segment prefixes include a unique token on every start, preventing overwrites after restart. The timestamp CSV records source and hardware frame IDs and whether each frame entered the queue. The output ledger links source frames to encoder parts and input order; an inventory records clean/forced closure and container counts. “Submitted” means accepted by the encoder pipe, not independently confirmed as decodable. For a full read-only decode/count check after stopping:
+Double-click **DeepEcoHab Acquisition** on your Desktop or in the Start menu.
+You can also launch from PowerShell:
 
-```bat
-deepecohab-verify-video PATH_TO_EXPERIMENT.config.json
+```powershell
+deepecohab-acquisition-cli launch
 ```
 
-Files are flushed in batches; this is not a guarantee of zero loss during power failure. Queues are bounded, and overflow, parse failures, disk pressure and worker failures are surfaced. Maintain sufficient disk capacity for raw recordings, preprocessing and camera recording.
+Open **Experiment → System check → Run system check**. For camera recording,
+also choose the FFmpeg/ffprobe paths, click **Save paths for this computer**, and
+test the camera and encoders before a real experiment. A camera working in
+SpinView still needs PySpin inside this application's own environment.
 
-## Extension and schema documentation
+To check core software from PowerShell while acquisition is stopped:
 
-- [ARCHITECTURE.md](ARCHITECTURE.md): modules, tab registration and concurrency contracts.
-- [docs/CONFIG_V8.md](docs/CONFIG_V8.md): current canonical/secondary file ownership and fixed-cycle semantics.
-- [docs/config_v8.schema.json](docs/config_v8.schema.json) and [docs/acquisition_gui_state_v1.schema.json](docs/acquisition_gui_state_v1.schema.json): machine-readable contracts.
-- [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md): supported historical formats and migration behavior.
-- [TESTING.md](TESTING.md): reproducible offline tests and hardware acceptance.
-- [CHANGELOG.md](CHANGELOG.md): public release and internal modernization history.
-- [CONTRIBUTING.md](CONTRIBUTING.md): development setup and compatibility expectations.
-- [docs/RELEASING.md](docs/RELEASING.md): reproducible builds and GitHub publication steps.
+```powershell
+deepecohab-acquisition-cli doctor
+```
 
-Pages are separate Python modules assembled by one registry. New pages normally require one module and one registry entry; production code does not depend on chaining Jupyter notebooks.
+Missing optional camera components do not make this basic check fail. For camera
+software, camera detection and a short encoder test:
 
-Animal details require tag, mouse line, genotype, genetic background, sex and date of birth. Subject name and Treatment are optional and save as null when blank; Notes remain optional. Genotype/background presets are editable; Sex is Male or Female only. Older incomplete animal records remain loadable but must be completed before saving.
+```powershell
+deepecohab-acquisition-cli doctor --require-camera --camera-devices
+```
 
-Setup’s **Define experiment’s end moment** saves `end_with` for downstream analysis only. It does not stop acquisition or trim data. The fixed elapsed-time light/dark cycle and automatic/manual recording datetimes retain their existing behavior.
+The [user guide](docs/USER_GUIDE.md) explains every acquisition page, metadata,
+layout dragging, recording, preprocessing and the generated files.
 
-A tunnel’s `length` is the distance in centimetres between the centres of its two main antennas. Unknown or inapplicable length is null. Historical multi-antenna measurements remain in GUI state for review.
+## 5. Find out about updates
 
-Add a whole board folder to report its raw files as one recording. Routine member files and internal boundaries are omitted from the diagnostic; real acquisition interruptions and clock resets remain. Separately selected files retain the adjustable three-minute gap reporting threshold. See [docs/DIAGNOSTIC_V12.md](docs/DIAGNOSTIC_V12.md) for the compact report contract and its embedded glossary.
+In the GUI, choose **Experiment → Check for updates**. The check displays the
+installed version, the latest published stable version and whether an update
+is available. It links to release notes and these installation instructions.
+The terminal equivalent is:
 
-## Project layout
+```powershell
+deepecohab-acquisition-cli updates
+```
 
-Runtime code and packaged assets are in `deepecohab_recorder/`; maintained guides
-are in `docs/`; regression fixtures/tests, firmware and developer commands are
-in `tests/`, `firmware/` and `tools/`. Historical format contracts are in
-`docs/legacy/`. Generated evidence belongs in ignored `.artifacts/`. The supplied
-reference checkout is retained and excluded from packaging and tracking.
-`Duplicate_test/` contains local investigation data and is also excluded; it is
-not part of the regression suite or a public example.
-See [docs/PERFORMANCE.md](docs/PERFORMANCE.md) for maintenance details and
-[docs/ROADMAP.md](docs/ROADMAP.md) for the remaining release stage.
+Checks run **only when requested**. They contact GitHub, which sees your IP
+address and application version; no experiment files, tags or configuration are
+sent. A failed/offline check is reported as unavailable, never as “up to date”.
+An unfinished release without its installation wheel is not offered as ready
+to install. Neither the check nor launching the GUI installs anything.
+
+For notifications without opening the application, sign in to GitHub and open
+the [repository](https://github.com/Marcin-A-Lipiec/deepecohab-acquisition).
+Choose **Watch → Custom → Releases → Apply** and enable email notifications in
+your GitHub settings. You do not need this account or subscription to install a
+public release. A source/README commit alone is not an application update notice.
+
+## Updating
+
+1. Read the new version's [release notes](https://github.com/Marcin-A-Lipiec/deepecohab-acquisition/releases).
+2. Finish recording/preprocessing, save the experiment configuration and close
+   every DeepEcoHAB Acquisition window. Update between experiments.
+3. Open PowerShell and download the current installation helper:
+
+```powershell
+Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/Marcin-A-Lipiec/deepecohab-acquisition/main/install_windows.ps1" -OutFile "$env:TEMP\deepecohab-install.ps1"
+```
+
+4. Install the latest stable release, replacing the existing application:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File "$env:TEMP\deepecohab-install.ps1" -ReleaseVersion latest -Force -StartMenu
+```
+
+**Camera users:** use the command below instead of step 4, substituting your
+matching vendor-wheel path and retaining `-PythonVersion` if you previously
+selected a version other than 3.12:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File "$env:TEMP\deepecohab-install.ps1" -ReleaseVersion latest -Force -StartMenu -PySpinWheel "C:\Downloads\YOUR_MATCHING_TELEDYNE_WHEEL.whl"
+```
+
+If PySpin is detected in the existing installation, the installer refuses a
+replacement without a supplied vendor wheel. This prevents silently
+losing camera support. A failed preflight leaves the existing installation intact.
+
+5. Confirm the version, reopen the Desktop icon and run System check:
+
+```powershell
+deepecohab-acquisition-cli --version
+deepecohab-acquisition-cli doctor
+```
+
+Existing experiment files, saved per-user preferences and FFmpeg paths are
+retained. Separate SDKs/drivers/FFmpeg remain installed. Updating the application
+does not automatically update those external components or migrate scientific
+file formats. There is no unattended or in-recording updater.
+
+Do not use `uv tool upgrade deepecohab-acquisition` as the documented update
+method: this application is installed from a particular GitHub release rather
+than an unpinned PyPI package. Use the installer above to select the new release
+and its matching tested constraints together.
+
+## 7. Return to an earlier version
+
+Close the GUI. Download the installation helper as in the updating section, then
+request an existing published version explicitly. For example:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File "$env:TEMP\deepecohab-install.ps1" -ReleaseVersion 1.0.0 -Force -StartMenu
+```
+
+Camera users must also supply `-PySpinWheel` and the matching Python selection.
+Only choose a version that exists on the Releases page. This reinstalls the
+software; it does not restore older experiment data or undo preprocessing.
+Check release notes before opening files written by a newer version.
+
+## 8. Uninstall
+
+1. Stop recording/preprocessing, save your configuration and close the GUI.
+2. Remove this application's Desktop and Start menu shortcuts:
+
+```powershell
+deepecohab-acquisition-shortcut --remove --start-menu
+```
+
+3. Remove its uv-managed application environment:
+
+```powershell
+uv tool uninstall deepecohab-acquisition
+```
+
+4. Confirm that it is no longer listed:
+
+```powershell
+uv tool list
+```
+
+This retains experiment recordings/configurations/preprocessed files, application
+preferences/logs, uv, shared Python downloads, SDKs, drivers and FFmpeg. Reinstall
+using section 2. No recording-folder deletion command is part of uninstallation.
+A shortcut created with `--directory` must be removed with that same directory.
+If the application was already removed, delete its leftover Desktop/Start menu
+shortcut manually; the shortcut-removal command may no longer exist.
+
+## 9. Troubleshooting
+
+| Problem | What to do |
+|---|---|
+| `uv` is not recognized | Close/reopen PowerShell. If needed run `& "$env:USERPROFILE\.local\bin\uv.exe" --version` and use that full executable path instead of `uv`, or repeat the uv installation. A custom uv installation directory needs its actual path. |
+| An application command is not recognized | Run `uv tool update-shell`, then close/reopen PowerShell. Confirm installation using `uv tool list`. The installer resolves the shortcut command directly, even before refreshing PATH. |
+| No release found / download returns 404 | Confirm that a public stable Release and its wheel have been published. A GitHub source repository, tag alone, draft or private release is insufficient for anonymous installation. Use a supplied source ZIP meanwhile. |
+| Release package is missing | Wait for publication to finish; do not substitute an unrelated wheel or development branch. |
+| Installer says the file has no `.ps1` extension | Copy the command exactly. The filename ends in `.ps1`, with no trailing `\`. For a source install, run it from the folder containing `install_windows.ps1`. |
+| Internet/proxy/TLS/rate-limit error | Try again later or ask your IT administrator about access to GitHub, Astral and Python package downloads. The GUI itself can run offline after installation. |
+| PySpin is required during update | Supply the matching vendor wheel using `-PySpinWheel`; the old camera-enabled environment is intentionally retained until then. |
+| Camera is missing | Check SpinView first, then SDK/PySpin/Python compatibility and the application's System check. A system-wide PySpin installation does not supply this isolated tool. |
+| FFmpeg or ffprobe is missing | Select both executables in **Experiment → System check** and save the paths. Installing OpenCV does not install these executables. |
+| Desktop icon does not open | Run `deepecohab-acquisition-cli launch` for the error, then recreate shortcuts using the command below. Copying a `.lnk` from another computer does not install the application. |
+
+Recreate the Desktop and Start menu shortcuts:
+
+```powershell
+deepecohab-acquisition-shortcut --start-menu
+```
+
+Show the locations of application logs, preferences and default experiment data:
+
+```powershell
+deepecohab-acquisition-cli paths
+```
+
+Report problems through [GitHub Issues](https://github.com/Marcin-A-Lipiec/deepecohab-acquisition/issues).
+Include the application version, Windows/Python/SDK versions if relevant, the
+exact command and full error, and a System check report. Review reports before
+sharing them: paths and device identifiers can be personal. Do not send private
+recordings or credentials in public issues.
+
+## 10. Command reference
+
+Run application commands after installation and after refreshing PowerShell PATH.
+The installation, update, rollback and uninstall commands are given in their
+numbered sections above.
+
+| Purpose | PowerShell command |
+|---|---|
+| Check uv | `uv --version` |
+| Update uv itself (standalone installer) | `uv self update` |
+| Refresh tool PATH for future terminals | `uv tool update-shell` |
+| List installed uv tools | `uv tool list` |
+| Show application version | `deepecohab-acquisition-cli --version` |
+| Launch with terminal diagnostics | `deepecohab-acquisition-cli launch` |
+| Check for a stable application update | `deepecohab-acquisition-cli updates` |
+| Print the update check as JSON | `deepecohab-acquisition-cli updates --json` |
+| Check core dependencies | `deepecohab-acquisition-cli doctor` |
+| Check camera and video support | `deepecohab-acquisition-cli doctor --require-camera --camera-devices` |
+| Print the System check as JSON | `deepecohab-acquisition-cli doctor --json` |
+| Show application/data paths | `deepecohab-acquisition-cli paths` |
+| Create/repair both shortcuts | `deepecohab-acquisition-shortcut --start-menu` |
+| Remove both shortcuts | `deepecohab-acquisition-shortcut --remove --start-menu` |
+| Uninstall the application | `uv tool uninstall deepecohab-acquisition` |
+
+For board recovery and video verification commands, see the [user guide](docs/USER_GUIDE.md).
+Updating uv is separate from updating DeepEcoHAB Acquisition. If uv was installed
+through a package manager, update uv through that same package manager.
+
+## 11. Install a downloaded source folder
+
+Use this method for a maintainer-supplied ZIP, an offline transfer of the source
+or before the first stable GitHub Release is published. **An internet connection
+is still needed to download Python and dependencies** unless they are already
+available in uv's cache; this ZIP is not a fully offline installer.
+
+1. Install uv as in section 1.
+2. Download/extract the source ZIP. If it contains another top-level folder, open
+   that inner folder. Locate `install_windows.ps1`, `pyproject.toml` and `requirements.txt`.
+3. In File Explorer, click the address bar, type `powershell`, then press Enter.
+   Alternatively type `cd "C:\the actual extracted folder"` in PowerShell, replacing
+   the example with your real folder path.
+4. Check that you are in the correct folder:
+
+```powershell
+Test-Path .\install_windows.ps1
+```
+
+It should print `True`. Then run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install_windows.ps1 -StartMenu
+```
+
+This installs **that local source version**, using its own `requirements.txt`.
+To replace an existing installation from a newly supplied source folder, add
+`-Force`. Camera users also add `-PySpinWheel` and the matching Python version as
+described above. Run `uv tool update-shell`, reopen PowerShell and verify the
+version. Do not run a source update from the older extracted folder by mistake.
+
+For an equivalent direct uv installation from this folder:
+
+```powershell
+uv tool install --python 3.12 --constraints .\requirements.txt .
+deepecohab-acquisition-shortcut --start-menu
+```
+
+The helper is preferred for updates because it checks for an open GUI and helps
+prevent losing a separately installed PySpin interface. Existing local `.venv`
+launchers remain available for developers; they are separate from uv tool installs.
+
+## Documentation and development
+
+- [User guide](docs/USER_GUIDE.md): configuration, acquisition and preprocessing.
+- [Installation details](docs/INSTALLATION.md) and [camera setup](docs/CAMERA_SETUP.md).
+- [Changelog](CHANGELOG.md) and [release preparation](docs/RELEASING.md).
+- [Architecture](ARCHITECTURE.md), [contributing](CONTRIBUTING.md) and [testing](TESTING.md).
+- Scientific contracts: [config v8](docs/CONFIG_V8.md), GUI state v1,
+  [diagnostics v12](docs/DIAGNOSTIC_V12.md), and Parquet schema v5. Application
+  releases do not themselves change these contracts.
+- [Project license](LICENSE) and [third-party notices](THIRD_PARTY_NOTICES.md).
+
+Maintainers publish an immutable `vX.Y.Z` tag, matching packages and release notes
+for every software release. README-only corrections can remain ordinary commits
+without a version bump. Never replace an already distributed software release
+with different code under the same version; publish the next version instead.

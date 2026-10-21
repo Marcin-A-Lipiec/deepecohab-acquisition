@@ -167,7 +167,25 @@ def test_header_save_and_load_shortcuts_use_full_experiment_actions(workspace, m
     assert events.notes.toPlainText() == "Saved through the header shortcut"
     assert window.pages.current_key() == "events"
     assert {action.text().split("\t")[0] for action in window.header.menu.actions()} == {
-        "Load experiment configuration", "Save experiment configuration", "Check configuration", "System check"}
+        "Load experiment configuration", "Save experiment configuration", "Check configuration", "System check", "Check for updates"}
+
+
+def test_update_action_preserves_unsaved_experiment_and_does_not_run_on_startup(workspace, monkeypatch):
+    from deepecohab_recorder.ui.update_check import UpdateCheckDialog
+    app, window, root = workspace
+    assert window._update_check_dialog is None
+    window.widgets["events"].notes.setPlainText("Unsaved experiment remains intact")
+    before = copy.deepcopy(window.services.repo.data)
+    requested = []
+    monkeypatch.setattr(UpdateCheckDialog, "check", lambda self: requested.append(self))
+    action = next(action for action in window.header.menu.actions() if action.text() == "Check for updates")
+    action.trigger()
+    settle(app)
+    assert requested == [window._update_check_dialog]
+    assert window._update_check_dialog.isVisible()
+    assert window.services.repo.data == before
+    assert window.widgets["events"].notes.toPlainText() == "Unsaved experiment remains intact"
+    window._update_check_dialog.close()
 
 
 @pytest.mark.parametrize("mode", ["light", "dark"])

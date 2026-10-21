@@ -1,5 +1,20 @@
 # Installation and launch
 
+For complete beginner instructions, follow the [README](../README.md). It is
+the primary guide for installation, update notifications, updating, rollback
+and uninstallation. This page provides additional setup and diagnostic detail.
+
+The Windows helper supports `-ReleaseVersion latest` or a specific stable version
+such as `-ReleaseVersion 1.0.0`. It downloads release metadata, uses that release's
+wheel and tagged dependency constraints, and does not need Git. Without that
+option it installs the local source folder as before. A source upload or tag
+alone is not a published installation package. Public release assets must exist.
+
+Use `-Force` for an update/rollback, after closing the GUI. Retain the matching
+Python selection and pass `-PySpinWheel` for camera-enabled installs. The helper
+blocks a reinstall that would silently remove detected PySpin. The
+README's commands download the helper and explain this complete workflow.
+
 This application is validated on 64-bit Windows with Python 3.12. uv supplies Python
 if needed and installs the Python dependencies in a separate tool environment.
 Python 3.10–3.12 is permitted; a camera's vendor wheel must match the chosen
@@ -194,6 +209,19 @@ new wheel/tag with `uv tool install --force --python 3.12 NEW_RELEASE`, retainin
 constraints and `--with` for the vendor wheel if used, then recreate shortcuts.
 For rollback, install the previous wheel/tag the same way. Experiments and logs
 are separate from the tool environment and are retained.
+
+To check for a new stable release without installing anything, choose
+**Experiment → Check for updates** or run:
+
+```powershell
+deepecohab-acquisition-cli updates
+```
+
+Only an explicit user request contacts GitHub. Checks are asynchronous in the
+GUI, have a timeout and bounded response size, and show offline/no-release/
+incomplete-package states separately from “up to date”. The README explains
+optional GitHub release-email notifications. No background updater changes the
+acquisition environment.
 
 Remove shortcuts before uninstalling:
 

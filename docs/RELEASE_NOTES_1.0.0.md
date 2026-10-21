@@ -18,6 +18,10 @@ Earlier 3.2.x numbers identify internal modernization builds.
   without guessing offsets or modifying recordings.
 - Wheel scrolling preserves editor values. Environmental settings follows EcoHAB
   layout in the Experiment sidebar group.
+- Beginner PowerShell installation/update/removal instructions, a version-aware
+  Windows installer with camera-interface retention checks, and explicit GUI/CLI
+  checks for stable GitHub updates. Updates are installed only after the user
+  closes the GUI; experiment files and scientific schemas are unchanged.
 
 Use the commands in the [installation guide](https://github.com/Marcin-A-Lipiec/deepecohab-acquisition/blob/v1.0.0/docs/INSTALLATION.md). Windows x64/Python 3.12 is
 the locally validated software target; metadata permits Python 3.10–3.12.

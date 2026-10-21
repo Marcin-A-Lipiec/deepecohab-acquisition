@@ -11,7 +11,7 @@ from .runtime_paths import app_data_directory, default_experiment_directory, log
 def main(argv=None):
     parser = argparse.ArgumentParser(description=SOFTWARE_LABEL)
     parser.add_argument("--version", action="version", version=SOFTWARE_LABEL)
-    parser.add_argument("command", choices=("launch", "paths", "doctor"), nargs="?", default="launch")
+    parser.add_argument("command", choices=("launch", "paths", "doctor", "updates"), nargs="?", default="launch")
     parser.add_argument('--json', action='store_true', help='Print the System check report as JSON.')
     parser.add_argument('--output-dir', type=Path, help='Experiment output directory to check.')
     parser.add_argument('--encode-test', action='store_true', help='Encode, decode and count three synthetic frames per profile.')
@@ -20,6 +20,17 @@ def main(argv=None):
     parser.add_argument('--ffprobe', help='Temporary ffprobe executable override for this check.')
     parser.add_argument('--require-camera', action='store_true', help='Fail if camera software or selected/fallback encoding is unavailable; includes encoder tests.')
     args = parser.parse_args(argv)
+    if args.command == 'updates':
+        from .services.updates import UpdateCheckError, check_updates
+        try:
+            result = check_updates()
+        except UpdateCheckError as exc:
+            print(json.dumps({'status': 'error', 'message': str(exc)}) if args.json else str(exc))
+            return 1
+        print(json.dumps(result.as_dict(), indent=2) if args.json else
+            f'Installed: {result.installed_version}\nLatest stable: {result.latest_version or "not available"}\n'
+            f'{result.message}\nRelease notes: {result.release_url}\nUpdate instructions: {result.instructions_url}')
+        return 0
     if args.command == 'doctor':
         from .services.dependencies import collect_checks, format_report
         report = collect_checks(output_directory=args.output_dir, ffmpeg=args.ffmpeg, ffprobe=args.ffprobe,

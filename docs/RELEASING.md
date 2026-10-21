@@ -102,6 +102,36 @@ with a fresh Windows tool installation. Publishing the package to PyPI is option
 
 ## Future releases
 
+Use a permanent Git checkout outside `dist/` for all maintained edits. Sync the
+clean checkout before starting work (`git pull --ff-only origin main`); inspect
+and resolve local changes rather than overwriting them. Commit reviewed source
+changes and push to the existing repository. Do not reinitialize Git or use a
+fresh ZIP as a new repository for each release.
+
+After Windows Actions checks pass, tag that reviewed commit and publish its
+GitHub Release with the matching audited wheel and other artifacts. Prefer
+uploading artifacts while the release is a draft, then publish it once complete
+and mark it as the latest stable release. The installer and update checker use
+GitHub's latest published stable release, require a `vX.Y.Z` tag and expect the
+matching `deepecohab_acquisition-X.Y.Z-py3-none-any.whl` asset. They do not offer
+a development branch or an unfinished wheel-less release as installable.
+
+The installer pairs the wheel with `requirements.txt` from the same immutable
+tag. Do not move/reuse an already distributed version tag or replace its code;
+issue a new version instead. Finish initial 1.0.0 preparation before publishing
+its tag; subsequent software changes get a new version. Documentation-only
+commits can keep the current software version, but do not alter old release
+archives. Release notes should describe user actions, camera-wheel requirements
+and any compatibility changes. Publishing a release triggers subscribers'
+GitHub notifications; a source commit alone does not represent a new release.
+
+Verify both a fresh install and an update from the previous version with the
+README's PowerShell commands. Check no-release/offline errors, actual shortcut
+launch, retained preferences and experiment files, and camera-wheel retention.
+Remove shortcuts before `uv tool uninstall deepecohab-acquisition` and confirm
+that the experiment files remain. Keep this evidence separate from physical
+hardware acceptance. The CI workflow prepares artifacts but does not publish.
+
 Update `deepecohab_recorder/__init__.py` once, add the changelog entry, refresh
 versioned installation URLs/release notes, and repeat the checks. The workflow
 reads the centralized version and checks pushed tags against it. Keep scientific

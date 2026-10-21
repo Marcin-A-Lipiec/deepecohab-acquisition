@@ -68,6 +68,7 @@ class MainWindow(QMainWindow):
         )
         self.widgets = {}
         self._system_check_dialog = None
+        self._update_check_dialog = None
         self._directory, self._closing = None, False
         self.header = ExperimentHeader(self)
         for label, symbol, callback, shortcut in [
@@ -75,6 +76,7 @@ class MainWindow(QMainWindow):
             ("Save experiment configuration", "download", self.save_all, "Ctrl+S"),
             ("Check configuration", "circle-check", self.check_config, None),
             ("System check", "info-circle", self.show_system_check, None),
+            ("Check for updates", "download", self.show_update_check, None),
         ]:
             self.header.add_action(label, symbol, callback, shortcut)
         self.header.stop_button.clicked.connect(lambda checked=False: self.stop_devices())
@@ -581,7 +583,18 @@ class MainWindow(QMainWindow):
         self._system_check_dialog.raise_()
         self._system_check_dialog.activateWindow()
 
+    def show_update_check(self):
+        from deepecohab_recorder.ui.update_check import UpdateCheckDialog
+        if self._update_check_dialog is None:
+            self._update_check_dialog = UpdateCheckDialog(self)
+        self._update_check_dialog.show()
+        self._update_check_dialog.raise_()
+        self._update_check_dialog.activateWindow()
+        self._update_check_dialog.check()
+
     def closeEvent(self, event):
+        if self._update_check_dialog is not None:
+            self._update_check_dialog.cancel()
         if self.system_check_busy():
             self._system_check_dialog.request_background_stop()
             if not (self.services.busy() or self.services.ports.snapshot()

@@ -299,7 +299,7 @@ class ExperimentHeader(QFrame):
         self.actions_button = QToolButton()
         self.actions_button.setText("Experiment")
         self.actions_button.setAccessibleName("Experiment actions")
-        self.actions_button.setToolTip("Load, save or check the experiment; open System check.")
+        self.actions_button.setToolTip("Load, save or check the experiment; open System check or check for updates.")
         self.actions_button.setPopupMode(QToolButton.InstantPopup)
         self.actions_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.menu = QMenu(self.actions_button)

@@ -2,6 +2,13 @@
 
 ## 1.0.0 — first public release (prepared locally; unpublished)
 
+- Added a step-by-step Windows README covering uv, installation, camera setup,
+  update notifications, updating, rollback and removal. Preserved acquisition
+  instructions in docs/USER_GUIDE.md.
+- Added user-requested GUI/CLI stable-release checks. Offline failures and
+  incomplete release packages are explicit; checks never install software or
+  send experiment data. Added release selection to the Windows installer,
+  pairing each wheel with its tagged constraints and protecting PySpin updates.
 - Added an explicit per-source fixed UTC offset for historical recording PCs
   that did not adjust for daylight-saving changes. Offset-bearing timestamps
   retain their recorded offset; unresolved local times stop without dropping rows.
