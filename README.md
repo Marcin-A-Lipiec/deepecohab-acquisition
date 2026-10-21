@@ -17,11 +17,7 @@ and Parquet schema v5. Current contracts are documented in
 [docs/CONFIG_V8.md](docs/CONFIG_V8.md) and [docs/DIAGNOSTIC_V12.md](docs/DIAGNOSTIC_V12.md).
 Software version is independent of these formats.
 
-Version **1.0.0** is the first public release number; earlier 3.2.x numbers identify
-internal modernization stages. The intended repository is
-[`Marcin-A-Lipiec/deepecohab-acquisition`](https://github.com/Marcin-A-Lipiec/deepecohab-acquisition).
-This copy is prepared locally; GitHub publication has not taken place. The original
-code's license is [still being decided](LICENSE_STATUS.md).
+Version **1.0.0** is the first public release number.
 
 ## Start on Windows
 
