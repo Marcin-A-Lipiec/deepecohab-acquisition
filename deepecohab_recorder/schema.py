@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 from deepecohab_recorder import SOFTWARE_LABEL, __version__
+from deepecohab_recorder.live_boards import RFID_BOARD_IDS, RFID_DEVICE_KEYS, visible_board_count
 from deepecohab_recorder.clock import schedule_defaults, validate_schedule, establish_schedule
 import copy
 from dataclasses import asdict
@@ -60,7 +61,7 @@ def default_config(name="experiment"):
             "devices": [],
         },
         "acquisition": {
-            "boards": {f"board_{i}": asdict(BoardConfig(i, i == 1)) for i in (1, 2)},
+            "boards": {f"board_{i}": asdict(BoardConfig(i, i == 1)) for i in RFID_BOARD_IDS},
             "camera": asdict(CameraConfig()),
             "hardware_trigger": asdict(TriggerConfig()),
             "environment": {
@@ -72,8 +73,7 @@ def default_config(name="experiment"):
                 }
             },
             "launch": {
-                "board1": True,
-                "board2": False,
+                **{key: key == "board1" for key in RFID_DEVICE_KEYS},
                 "camera": False,
                 "trigger": False,
                 "externally_triggered": True,
@@ -81,7 +81,7 @@ def default_config(name="experiment"):
             },
             "com_ports": {},
             "preprocessing": {"sources": [], "options": {}},
-            "ui": {"events_row_count": 4},
+            "ui": {"events_row_count": 4, "rfid_board_count": 1},
             "_provenance": {"software": SOFTWARE_LABEL, "software_version": __version__},
         },
     }
@@ -253,6 +253,8 @@ def migrate_config(source, current_experiment_name=None):
         old.get("recording") or old.get("experiment") or {}
     ).get("name", "experiment")
     result = merge(default_config(name), old)
+    # Infer old panel counts before defaults can hide meaningful saved hardware.
+    result["acquisition"].setdefault("ui", {})["rfid_board_count"] = visible_board_count(old.get("acquisition", {}))
     recording, acquisition = result["recording"], result["acquisition"]
     # The public v7 contract stores selected sources in acquisition. Runtime
     # timing keeps its evidence together, including automatic recovery flags.
@@ -454,14 +456,16 @@ def migrate_source_options(config):
             options[key] = mapped
 
 
-def metadata_boards(config):
+def metadata_boards(config, inputs=None):
     """An offline logical-board catalogue, without activating serial connections."""
     from deepecohab_recorder.models import NEW_DAQ, DAQ_V15, OLD_DAQ
     hardware = {'v1.0': NEW_DAQ, 'v1.5': DAQ_V15, 'legacy_raw': OLD_DAQ,
                 'old_decimal': OLD_DAQ, 'old_hex': OLD_DAQ}
     boards = copy.deepcopy(config['acquisition']['boards'])
     profiles = {}
-    for source in config['acquisition'].get('preprocessing', {}).get('sources', []):
+    sources = (config['acquisition'].get('preprocessing', {}).get('sources', [])
+               if inputs is None else [vars(spec) for spec in inputs])
+    for source in sources:
         board_id, profile = source.get('board_id'), source.get('profile')
         if not board_id or profile not in hardware:
             continue

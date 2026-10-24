@@ -24,6 +24,8 @@ def log_directory() -> Path:
 
 
 def default_experiment_directory() -> Path:
+    if os.environ.get('DEEPECOHAB_ACQUISITION_PREVIEW') == '1':
+        return app_data_directory().parent / 'experiments'
     return Path.home() / "DeepEcoHAB_data"
 
 

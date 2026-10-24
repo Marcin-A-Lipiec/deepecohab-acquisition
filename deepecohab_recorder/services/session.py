@@ -33,6 +33,8 @@ class RunSession:
             self.start = self.end = self.path = None
             self.timeline, self.devices = {}, {}
             self.override = self.started_without_config = False
+            for key in ('clock', 'start_monotonic'):
+                self.__dict__.pop(key, None)
 
     def log(self, event, **details):
         with self.lock, self.repo.lock:

@@ -1,3 +1,4 @@
+from tests.helpers import settle_discovery
 """Recording-PC clock choices must preserve elapsed time and never guess DST."""
 
 from dataclasses import replace
@@ -146,6 +147,7 @@ class RecordingClockGuiTests(unittest.TestCase):
         spec = raw(self.root / "clock" / "raw.txt", ["20211031_023000000"])
         tab = self.window.widgets["preprocessing"]
         tab.add_paths([spec.path])
+        settle_discovery(tab)
         self.assertEqual(tab.table.rowCount(), 1)
         self.assertFalse(hasattr(tab, "raw_clock_button"))
         self.assertEqual(tab.input_specs()[0].naive_utc_offset, "")
@@ -172,6 +174,7 @@ class RecordingClockGuiTests(unittest.TestCase):
         spec = raw(self.root / "clock" / "raw.txt", ["20211031_010000000"])
         tab = self.window.widgets["preprocessing"]
         tab.add_paths([spec.path])
+        settle_discovery(tab)
         tab._inventory_signature = ("cached",)
         dialog = AdvancedOptions(tab)
         dialog.raw_clock_enabled.setChecked(True)
@@ -188,6 +191,7 @@ class RecordingClockGuiTests(unittest.TestCase):
         spec = raw(self.root / "clock" / "raw.txt", ["20211031_010000000"])
         tab = self.window.widgets["preprocessing"]
         tab.add_paths([spec.path])
+        settle_discovery(tab)
         dialog = AdvancedOptions(tab)
         dialog.raw_clock_enabled.setChecked(True)
         self.assertEqual(dialog.recording_offsets(), [""])

@@ -35,7 +35,7 @@ The diagnostic path is null before successful publication, then points to `<Expe
 
 Logical source IDs combine the physical channel and positive Board number: `1-1`, `8-2`, `A-1`, `TTL2-1`. Hardware COM connections are secondary metadata. Legacy COM suffixes are resolved only through an unambiguous mapping; COM5 does not imply Board 5. Bare channels spanning several candidate boards require explicit layout assignment.
 
-## Antenna distances (optional, Patch 14)
+## Antenna distances (optional)
 
 Each tunnel may contain `antenna_distances_cm`, an array of measured distances **along the tunnel between successive antenna centres**. Its order follows `antennas` from `start_cell_id` toward `end_cell_id`. Item `i` measures `antennas[i]` to `antennas[i+1]`. Distances are the same in both directions; no reverse copy is stored.
 
@@ -73,6 +73,6 @@ Diagnostic version 10 contains completed preprocessing settings/provenance, sele
 
 No stable experiment UUID, derived analysis start, scheduling-policy choice, detailed channel-role model, completed preprocessing provenance or dataset manifest is generated in the main file. Optional setup metadata stays in secondary state; interventions and cohort changes can be recorded in main events.
 
-Patch 14 adds complete `transition_medians` and `recording_boundaries` arrays. Median rows cover all configured/accepted observed mice and both directions of each successive physical tunnel antenna pair, including null medians for missing observations and medians below the interpolation sample threshold. The complete table is generated even with interpolation off. Cohort fallback estimates, when enabled, are separate from each mouse's actual median. Incomplete/missing layout is noted in `transition_medians_policy`.
+This format includes complete `transition_medians` and `recording_boundaries` arrays. Median rows cover all configured/accepted observed mice and both directions of each successive physical tunnel antenna pair, including null medians for missing observations and medians below the interpolation sample threshold. The complete table is generated even with interpolation off. Cohort fallback estimates, when enabled, are separate from each mouse's actual median. Incomplete/missing layout is noted in `transition_medians_policy`.
 
 Positive observed inter-file gaps shorter than 180 seconds are omitted by default from `recording_boundaries`, `missed_data_periods`, and `recording_coverage[*].observed_record_gaps`. Advanced options can disable the threshold or change it. Exactly-threshold gaps are included. `recording_boundary_policy` records the applied threshold and suppressed count. Source intervals, declared file rotations, clock epochs, and confirmed acquisition-journal interruptions remain available. The gap threshold changes reporting only. Five-entry `examples` remain previews, not complete inventories.

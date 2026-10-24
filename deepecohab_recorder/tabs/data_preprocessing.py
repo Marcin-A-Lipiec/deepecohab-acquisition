@@ -8,7 +8,7 @@ from pathlib import Path
 import tempfile
 import time
 
-from PySide6.QtCore import QProcess, Qt, QUrl, QTimer
+from PySide6.QtCore import QFileSystemWatcher, QProcess, Qt, QUrl, QTimer
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -40,10 +40,10 @@ from deepecohab_recorder.source_identity import source_id
 from deepecohab_recorder.metadata_updates import config_digest, write_config_update
 from deepecohab_recorder.preprocessing.layout_check import check_layout, apply_layout_changes
 from deepecohab_recorder.preprocessing.models import PROFILES, PROFILE_LABELS, Settings, iso
-from deepecohab_recorder.preprocessing.sources import (candidate_files, experiment_sources, inspect_source, serialize_source, source_key)
+from deepecohab_recorder.preprocessing.sources import SourceGroup, serialize_source, source_key
+from deepecohab_recorder.services.discovery import SourceDiscovery
 from deepecohab_recorder.preprocessing.inventory import input_signature
 from deepecohab_recorder.preprocessing.metadata_review import review_metadata
-from deepecohab_recorder.experiment_files import discover_config
 from deepecohab_recorder.preprocessing.output_plan import experiment_output_name
 from deepecohab_recorder.ui.preprocessing_outputs import OutputGroupsDialog
 from deepecohab_recorder.ui.preprocessing_advanced import AdvancedOptions
@@ -110,6 +110,7 @@ class DataPreprocessingTab(QWidget):
         self._buffer = b""
         self._temporary = None
         self._job_result = None
+        self._processing = False
         self.process = QProcess(self)
         self.process.readyReadStandardOutput.connect(self.process_output)
         self.process.readyReadStandardError.connect(self.process_errors)
@@ -187,7 +188,7 @@ class DataPreprocessingTab(QWidget):
             self.table.setColumnWidth(col, max(width, label_width))
         layout.addWidget(self.table, 1)
         note = QLabel(
-            "One board folder is reported as one recording: individual files and routine internal boundaries are omitted from diagnostics. Confirmed interruptions and clock resets remain reported. Assign board 1 or 2; antenna names become 1-1, 8-2, etc. The hyphen is automatic. Use the same board numbers in EcoHAB layout. Simultaneous boards share a recording part. Put known restarts in separate sources/parts."
+            "One board folder is reported as one recording: individual files and routine internal boundaries are omitted from diagnostics. Confirmed interruptions and clock resets remain reported. Assign each source its board number; antenna names become 1-1, 8-2, etc. The hyphen is automatic. Use the same board numbers in EcoHAB layout. Live acquisition supports up to four boards; archived board numbers are unrestricted. Simultaneous boards share a recording part. Put known restarts in separate sources/parts."
         )
         note.setWordWrap(True)
         layout.addWidget(note)
@@ -252,76 +253,123 @@ class DataPreprocessingTab(QWidget):
         self.open_button.setEnabled(False)
         layout.addWidget(self.open_button, 0, Qt.AlignRight)
 
+        self._generation = self._revision = 0
+        self._job_generation = None
+        self._inventory_selection = None
+        self._scan_ready = False
+        self._applying_scan = self._updating_table = self._discovery_closed = False
+        self._manual_paths, self._removed_sources, self._invalid_sources = set(), set(), set()
+        self._profile_overrides, self._automatic_paths = set(), set()
+        self._source_fingerprints = {}
+        self.discovery = SourceDiscovery(self)
+        self.discovery.completed.connect(self._discovery_completed)
+        self.discovery.failed.connect(self._discovery_failed)
+        self.discovery.activity_changed.connect(self._scan_controls)
+        self.watcher = QFileSystemWatcher(self)
+        self._scan_debounce = QTimer(self)
+        self._scan_debounce.setSingleShot(True)
+        self._scan_debounce.timeout.connect(lambda: self.scan_directory(only_changed=True))
+        self.watcher.directoryChanged.connect(lambda *_: self._scan_debounce.start(500))
+        self.table.itemChanged.connect(self._source_edited)
+        self.scan_status = QLabel('Raw recording discovery is idle.')
+        self.scan_status.setWordWrap(True)
+        layout.insertWidget(layout.indexOf(self.table), self.scan_status)
+
     def read(self):
         root = self.ui.services.context.save_directory
+        sources = {key: copy.deepcopy(entry) for key, entry in self._saved_sources.items()
+                   if str((Path(root) / key).resolve()) not in self._removed_sources}
+        sources.update({source_key(source.path, root): serialize_source(source, spec, root)
+                        for source, spec in zip(self._sources, self.source_specs())})
         return {"acquisition.preprocessing": {
-            "sources": [serialize_source(source, spec, root) for source, spec in zip(self._sources, self.source_specs())],
+            "sources": list(sources.values()),
             "options": {key: copy.deepcopy(value) for key, value in self.options.items() if key != "timezone"},
             "formats": {"parquet": self.parquet.isChecked(), "csv": self.csv.isChecked()},
         }}
 
     def load(self, config):
+        if self.background_busy():
+            raise RuntimeError('Finish preprocessing before loading its settings.')
         self.config_snapshot = copy.deepcopy(config)
-        self._restore_sources = True
-        self.options["timezone"] = config["recording"]["timeline"]["recording_timezone"]
-        QTimer.singleShot(0, lambda: self.configure_experiment(force=True))
+        self._reset_experiment(config)
+        self._auto_context = (self.ui.services.context.experiment_name, self.ui.services.context.save_directory)
+        self.configure_experiment(force=True)
+
+    def _reset_experiment(self, config, restore=True):
+        self.discovery.reset()
+        self._generation += 1
+        self._revision = 0
+        self._scan_ready = False
+        self._applying_scan = False
+        self._manual_config = self._manual_output = False
+        self._manual_paths.clear()
+        self._removed_sources.clear()
+        self._invalid_sources.clear()
+        self._source_fingerprints.clear()
+        self._automatic_paths.clear()
+        self._profile_overrides.clear()
+        self._scan_debounce.stop()
+        if self.watcher.directories():
+            self.watcher.removePaths(self.watcher.directories())
+        self._updating_table = True
+        self.table.setRowCount(0)
+        self._updating_table = False
+        self._specs.clear()
+        self._sources.clear()
+        self._notice_keys.clear()
+        self.preview_antennas.clear()
+        self._preview_by_path.clear()
+        self._used_antennas.clear()
+        self._used_ttl.clear()
+        self._inventory_signature = self._inventory_selection = None
+        self._inventory_pending = False
+        self._requested_inventory_signature = None
+        self._scan_signature = self._config_signature = None
+        self._config_discovery_error = ''
+        self._last_scan_check = time.monotonic()
+        self._output_directory = ''
+        self._job_result = None
+        self._job_generation = None
+        self._buffer = b''
+        if self._temporary:
+            self._temporary.cleanup()
+            self._temporary = None
+        self.open_button.setEnabled(False)
+        self.progress.setValue(0)
+        self.log.clear()
+        self.config_path.clear()
+        self.output_path.setText(str(self.ui.services.context.save_directory))
+        self.options = copy.deepcopy(self._default_options)
+        self.options['timezone'] = config['recording']['timeline']['recording_timezone']
+        metadata = config.get('acquisition', {}).get('preprocessing', {}) if restore else {}
+        self._saved_sources = {entry['path']: copy.deepcopy(entry) for entry in metadata.get('sources', [])
+                               if isinstance(entry, dict) and 'path' in entry}
+        root = Path(self.ui.services.context.save_directory)
+        self._profile_overrides = {str((root / key).resolve()) for key, entry in self._saved_sources.items() if entry.get('profile')}
+        self.options.update({key: copy.deepcopy(value) for key, value in metadata.get('options', {}).items()
+                             if key in self.options and key != 'timezone'})
+        from deepecohab_recorder.preprocessing.output_plan import normalize_groups
+        normalize_groups(self.options)
+        formats = metadata.get('formats', {})
+        self.parquet.setChecked(bool(formats.get('parquet', True)))
+        self.csv.setChecked(bool(formats.get('csv', False)))
+        self._restore_sources = False
+        self._scan_controls()
 
     def configure_experiment(self, force=False):
-        if self.background_busy():
+        if self.background_busy() or self._discovery_closed:
             return
         context = self.ui.services.context
         current = (context.experiment_name, context.save_directory)
         changed = current != self._auto_context
-        root_changed = self._auto_context is None or current[1] != self._auto_context[1]
+        if self._auto_context is not None and current[1] != self._auto_context[1]:
+            self._reset_experiment(self.config_snapshot, restore=self._restore_sources)
         self._auto_context = current
-        if root_changed or self._restore_sources:
-            self._manual_config = self._manual_output = False
-            self.table.setRowCount(0)
-            self._specs.clear()
-            self._sources.clear()
-            self._notice_keys.clear()
-            self.preview_antennas.clear()
-            self._preview_by_path.clear()
-            self._used_antennas.clear()
-            self._used_ttl.clear()
-            self._inventory_signature = None
-            self._scan_signature = None
-            zone = self.options["timezone"]
-            self.options = copy.deepcopy(self._default_options)
-            self.options["timezone"] = zone
-            metadata = (self.config_snapshot.get("acquisition", {}).get("preprocessing", {})
-                        if self._restore_sources else {})
-            self._saved_sources = {entry["path"]: entry for entry in metadata.get("sources", []) if isinstance(entry, dict) and "path" in entry}
-            self.options.update({k: copy.deepcopy(v) for k, v in metadata.get("options", {}).items() if k in self.options and k != "timezone"})
-            from deepecohab_recorder.preprocessing.output_plan import normalize_groups
-            normalize_groups(self.options)
-            formats = metadata.get("formats", {})
-            self.parquet.setChecked(bool(formats.get("parquet", True)))
-            self.csv.setChecked(bool(formats.get("csv", False)))
-            self._restore_sources = False
-            force = True
         if not (force or changed):
             return
-        force = True
-        root = Path(current[1])
         if not self._manual_output:
-            self.output_path.setText(str(root))
-        if not self._manual_config:
-            try:
-                path = discover_config(root, current[0])
-                self._config_discovery_error = ""
-                self.config_path.setText(str(path) if path else "")
-                if path:
-                    self.options["timezone"] = self.read_config()["recording"]["timeline"]["recording_timezone"]
-            except Exception as exc:
-                self._config_discovery_error = str(exc)
-                self.config_path.clear()
-                self.log.appendPlainText("Configuration discovery: " + str(exc))
-        if force:
-            self.scan_directory(only_changed=True)
-            external = [str(root / key) for key in self._saved_sources if Path(root / key).exists()]
-            if external:
-                self.add_paths(external)
+            self.output_path.setText(str(context.save_directory))
+        self.scan_directory(only_changed=True)
 
     def viewport_size(self, width, height):
         header = self.table.horizontalHeader()
@@ -330,22 +378,19 @@ class DataPreprocessingTab(QWidget):
             self.table.setColumnWidth(0, 220)
 
     def refresh(self):
-        if self.background_busy():
+        if self.background_busy() or self._discovery_closed:
             return
         self.configure_experiment()
-        if time.monotonic() - self._last_scan_check < 3:
-            return
-        self._last_scan_check = time.monotonic()
-        root = Path(self.ui.services.context.save_directory)
-        signature = tuple((p.name, p.stat().st_mtime_ns) for p in sorted(root.glob("*.json")))
-        if not self._manual_config and signature != self._config_signature:
-            self._config_signature = signature
-            self.configure_experiment(force=True)
-        self.scan_directory(only_changed=True)
+        if time.monotonic() - self._last_scan_check >= 30:
+            self._last_scan_check = time.monotonic()
+            self.scan_directory(only_changed=True)
+
+    def selection_signature(self):
+        return (self.options['timezone'], tuple((s.path, self._source_fingerprints.get(s.path),
+            a.board_id, a.port, a.profile, a.naive_utc_offset) for s, a in zip(self._sources, self.source_specs())))
 
     def antenna_names(self):
-        specs = self.input_specs()
-        if self._inventory_signature == input_signature(specs, self.options["timezone"]):
+        if self._inventory_selection == self.selection_signature():
             return set(self._used_antennas)
         return {source_id(channel, spec.board_id) for source, spec in zip(self._sources, self.source_specs()) for channel in source.channels}
 
@@ -368,12 +413,14 @@ class DataPreprocessingTab(QWidget):
         try:
             if self.background_busy():
                 return
+            if self.discovery_busy() or not self._scan_ready:
+                raise ValueError('Wait for raw recording discovery to finish before managing groups.')
             specs = self.input_specs()
             if not specs:
                 self._show_output_groups()
                 return
             signature = input_signature(specs, self.options["timezone"])
-            if self._inventory_signature == signature:
+            if self._inventory_signature == signature and self._inventory_selection == self.selection_signature():
                 self._show_output_groups()
                 return
             active = {str(Path(c.data_file).resolve()) for c in self.ui.services.controllers.values()
@@ -387,6 +434,8 @@ class DataPreprocessingTab(QWidget):
             self._cancel_file = root / "cancel"
             self._inventory_pending = True
             self._requested_inventory_signature = signature
+            self._requested_inventory_selection = self.selection_signature()
+            self._job_generation = self._generation
             self._job_result = None
             self._buffer = b""
             self.progress.setValue(0)
@@ -476,18 +525,185 @@ class DataPreprocessingTab(QWidget):
             self.add_paths([path])
 
     def scan_directory(self, checked=False, only_changed=False):
-        if self.background_busy():
+        if self.background_busy() or self._discovery_closed:
             return
-        root = Path(self.ui.services.context.save_directory) / "raw_antenna_reads"
-        paths = experiment_sources(root)
-        active = {str(Path(c.data_file).resolve()) for c in self.ui.services.controllers.values()
-                  if getattr(c, "data_file", None) and c.is_running()}
-        signature = (self.options["timezone"], tuple((str(p), p.stat().st_size, p.stat().st_mtime_ns)
-                     for source in paths for p in candidate_files(source)), tuple(sorted(active)))
-        if only_changed and signature == self._scan_signature:
+        if not only_changed:
+            self.discovery.reset()
+            self._scan_debounce.stop()
+            self._revision += 1
+            self._applying_scan = False
+            self.table.setEnabled(True)
+            self._removed_sources.clear()
+        try:
+            assignments = {source.path: {key: getattr(spec, key) for key in
+                ('board_id', 'port', 'profile', 'group', 'part', 'tick_ms', 'counter_bits', 'naive_utc_offset')}
+                for source, spec in zip(self._sources, self.source_specs())}
+            context = self.ui.services.context
+            active = [str(Path(c.data_file).resolve()) for c in self.ui.services.controllers.values()
+                      if getattr(c, 'data_file', None) and c.is_running()]
+            self.discovery.request(dict(root=str(context.save_directory), name=context.experiment_name,
+                timezone=self.options['timezone'], config=copy.deepcopy(self.config_snapshot),
+                config_path=self.config_path.text().strip(), manual_config=self._manual_config,
+                saved_sources=copy.deepcopy(self._saved_sources), assignments=assignments,
+                manual_paths=sorted(self._manual_paths), profile_overrides=sorted(self._profile_overrides),
+                removed=sorted(self._removed_sources), active=active, generation=self._generation,
+                fingerprints=dict(self._source_fingerprints), revision=self._revision, force=not only_changed))
+            self.scan_status.setText('Discovering raw recordings in the background…')
+            self._scan_controls()
+        except (ValueError, AttributeError) as exc:
+            self.error(exc)
+
+    def discovery_busy(self):
+        return self.discovery.busy or self._applying_scan or self._scan_debounce.isActive()
+
+    def _scan_controls(self):
+        if not hasattr(self, 'discovery'):
             return
-        self._scan_signature = signature
-        self.add_paths([str(p) for p in paths], rescan=True)
+        self.start_button.setEnabled(not self._processing and not self.background_busy() and not self.discovery_busy()
+                                     and self._scan_ready and bool(self._sources) and not self._invalid_sources)
+
+    def _source_edited(self, *_):
+        if not self._updating_table:
+            self._revision += 1
+            self._inventory_selection = None
+            self._scan_debounce.start(350)
+            self._scan_controls()
+
+    def _profile_edited(self, path):
+        if not self._updating_table:
+            self._profile_overrides.add(path)
+            self._source_edited()
+
+    def _discovery_failed(self, message):
+        self._scan_ready = False
+        self.scan_status.setText('Discovery failed. Use Rescan experiment to retry.')
+        self.log.appendPlainText('Discovery: ' + message)
+        self._scan_controls()
+
+    def _discovery_completed(self, result):
+        if self._discovery_closed or result['generation'] != self._generation:
+            return
+        if result['revision'] != self._revision or self.background_busy():
+            if not self.background_busy():
+                self.scan_directory(only_changed=True)
+            return
+        if not self._manual_config:
+            self.config_path.setText(result['config_path'])
+        self._config_discovery_error = result['config_error']
+        if result['config_error']:
+            self.log.appendPlainText('Configuration discovery: ' + result['config_error'])
+        self.options['timezone'] = result['timezone']
+        wanted = {entry['path'] for entry in result['entries']}
+        self._updating_table = True
+        for row in reversed(range(len(self._sources))):
+            source = self._sources[row]
+            if source.path in self._automatic_paths and source.path not in wanted:
+                self.table.removeRow(row)
+                self._sources.pop(row)
+                self._specs.pop(row)
+                self._source_fingerprints.pop(source.path, None)
+                self._invalid_sources.discard(source.path)
+        self._updating_table = False
+        self._automatic_paths = set(result['automatic'])
+        self._applying_scan = True
+        self.table.setEnabled(False)
+        entries = iter(result['entries'])
+        notices, changed = [], [False]
+        generation, revision = self._generation, self._revision
+
+        def apply_batch():
+            if generation != self._generation or self._discovery_closed:
+                return
+            if revision != self._revision:
+                self._applying_scan = False
+                self.table.setEnabled(not self.background_busy())
+                self.scan_directory(only_changed=True)
+                return
+            until = time.monotonic() + .008
+            self._updating_table = True
+            try:
+                while time.monotonic() < until:
+                    entry = next(entries)
+                    notices.extend(entry['notices'])
+                    path = entry['path']
+                    row = next((i for i, s in enumerate(self._sources) if s.path == path), None)
+                    if entry.get('unchanged') and row is not None:
+                        self._invalid_sources.discard(path)
+                        continue
+                    if entry['invalid'] or entry['source'] is None:
+                        if row is not None:
+                            self._invalid_sources.add(path)
+                            self.table.item(row, 0).setToolTip(path + '\nUnavailable or conflicting source. Correct it and rescan, or remove this row.')
+                        continue
+                    self._invalid_sources.discard(path)
+                    if self._source_fingerprints.get(path) == entry['fingerprint']:
+                        continue
+                    source = SourceGroup.from_dict(entry['source'])
+                    spec = source.prototype
+                    members = {s.path for s in source.files}
+                    overlap = next((s.label for i, s in enumerate(self._sources) if i != row and members & {f.path for f in s.files}), None)
+                    if overlap:
+                        notices.append(dict(path=path, format='duplicate', message=f'Overlaps selected source {overlap}; remove that source before adding this folder.'))
+                        continue
+                    if row is None:
+                        if source_key(path, self.ui.services.context.save_directory) not in self._saved_sources:
+                            assigned = self.source_specs()
+                            known = next((a for a in assigned if spec.port and a.port == spec.port), None)
+                            if not source.embedded_boards:
+                                if known:
+                                    spec.board_id = known.board_id
+                                elif source.is_folder:
+                                    used = {a.board_id for a in assigned}
+                                    spec.board_id = next(n for n in range(1, 10000) if n not in used)
+                            spec.part = 1 if source.is_folder else 1 + max((a.part or 1 for a in assigned if a.board_id == spec.board_id), default=0)
+                            for member in source.files:
+                                member.board_id = spec.board_id
+                        row = len(self._sources)
+                        self._sources.append(source)
+                        self._specs.append(spec)
+                        self.table.insertRow(row)
+                    else:
+                        self._sources[row], self._specs[row] = source, spec
+                    self._set_source_row(source, spec, row)
+                    self._source_fingerprints[path] = entry['fingerprint']
+                    changed[0] = True
+            except StopIteration:
+                self._updating_table = False
+                self._applying_scan = False
+                self._scan_ready = True
+                self.table.setEnabled(not self.background_busy())
+                if changed[0]:
+                    self._inventory_selection = None
+                self.preview_antennas = self.antenna_names()
+                self._report_notices(notices)
+                count = sum(len(source.files) for source in self._sources if source.path not in self._invalid_sources)
+                self.scan_status.setText(f'Scan complete: {len(self._sources)} sources, {count} selected raw files; {len(notices)} notices.' +
+                    (' Resolve or remove unavailable sources before processing.' if self._invalid_sources else ''))
+                if result['force']:
+                    self.log.appendPlainText(self.scan_status.text())
+                legacy = any(s.prototype.profile == 'legacy_raw' for s in self._sources)
+                self.legacy_note.setText('Legacy hourly files detected. Board folders merge automatically.' if legacy else 'Save assignments here or with Save experiment configuration on Setup.')
+                if self.watcher.directories():
+                    self.watcher.removePaths(self.watcher.directories())
+                if result['watched']:
+                    self.watcher.addPaths(result['watched'])
+                self._scan_controls()
+                return
+            except Exception as exc:
+                self._applying_scan = False
+                self.table.setEnabled(not self.background_busy())
+                self._discovery_failed(str(exc))
+                return
+            finally:
+                self._updating_table = False
+            QTimer.singleShot(0, apply_batch)
+
+        apply_batch()
+
+    def close_discovery(self):
+        self._discovery_closed = True
+        self._scan_debounce.stop()
+        self.discovery.close()
 
     def _report_notices(self, notices):
         fresh = []
@@ -512,99 +728,44 @@ class DataPreprocessingTab(QWidget):
     def add_paths(self, paths, rescan=False):
         if self.background_busy():
             return
-        try:
-            config = self.read_config()
-            root = Path(self.ui.services.context.save_directory)
-            raw_root = (root / "raw_antenna_reads").resolve()
-            normalized = []
-            for value in paths:
-                path = Path(value).resolve()
-                try:
-                    relative = path.relative_to(raw_root)
-                    if len(relative.parts) > 1:
-                        path = raw_root / relative.parts[0]
-                except ValueError:
-                    pass
-                if path not in normalized:
-                    normalized.append(path)
-            active = {str(Path(c.data_file).resolve()) for c in self.ui.services.controllers.values()
-                      if getattr(c, "data_file", None) and c.is_running()}
-            assignments = {source.path: spec for source, spec in zip(self._sources, self.source_specs())}
-            counts = {}
-            for spec in assignments.values():
-                counts[spec.board_id] = max(counts.get(spec.board_id, 0), spec.part or 1)
-            notices, added = [], 0
-            for path in normalized:
-                row = next((i for i, source in enumerate(self._sources) if source.path == str(path)), None)
-                if row is not None and not rescan:
-                    continue
-                saved = self._saved_sources.get(source_key(path, root))
-                old = assignments.get(str(path))
-                if old:
-                    saved = dict(saved or {}, **{k: getattr(old, k) for k in ('board_id', 'port', 'profile', 'group', 'part', 'tick_ms', 'counter_bits', 'naive_utc_offset')})
-                source, messages = inspect_source(path, config, self.options["timezone"], saved=saved,
-                    active=active, allow_unresolved_clock=True)
-                notices.extend(messages)
-                if source is None:
-                    continue
-                # Never silently process the same file as both a folder member
-                # and a separately selected source.
-                members = {spec.path for spec in source.files}
-                overlap = next((s.label for i, s in enumerate(self._sources) if i != row and members & {f.path for f in s.files}), None)
-                if overlap:
-                    notices.append(dict(path=str(path), format="duplicate", message=f'Overlaps selected source {overlap}; remove that source before adding this folder.'))
-                    continue
-                spec = source.prototype
-                if not saved:
-                    known = next((a for a in assignments.values() if spec.port and a.port == spec.port), None)
-                    used = {a.board_id for a in assignments.values()}
-                    if known:
-                        spec.board_id = known.board_id
-                    elif not source.embedded_boards and source.is_folder:
-                        spec.board_id = next(n for n in range(1, 10000) if n not in used)
-                    counts[spec.board_id] = counts.get(spec.board_id, 0) + 1
-                    spec.part = 1 if source.is_folder else counts[spec.board_id]
-                    spec.group = "1"
-                if row is None:
-                    row = len(self._sources)
-                    self._sources.append(source)
-                    self._specs.append(spec)
-                    self.table.insertRow(row)
-                    added += 1
-                else:
-                    self._sources[row] = source
-                    self._specs[row] = spec
-                assignments[str(path)] = spec
-                path_item = item(source.label)
-                path_item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
-                path_item.setToolTip(source.path + "\nFirst preview PC time: " + str(iso(source.first_pc_us, self.options["timezone"]) or "unresolved; see the clock warning in the log") +
-                    ("\nOffset-free raw PC times: fixed UTC" + spec.naive_utc_offset if spec.naive_utc_offset else "\nOffset-free raw PC times: experiment timezone rules") +
-                    ("\nAll files in this folder share these assignments and form one continuous source." if source.is_folder else ""))
-                self.table.setItem(row, 0, path_item)
-                self.table.setItem(row, 1, item(spec.board_id))
-                port_item = item(spec.port)
-                port_item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
-                port_item.setToolTip("Connection metadata only. Antenna names use the Board number; no COM label is required.")
-                self.table.setItem(row, 2, port_item)
-                profile = QComboBox()
-                for value in PROFILES:
-                    profile.addItem(PROFILE_LABELS[value], value)
-                profile.setCurrentIndex(max(0, profile.findData(spec.profile)))
-                profile.setToolTip("Detected from file contents. v1.0 and v1.5 have the same structure; A–F-only data may need a manual profile choice.")
-                self.table.setCellWidget(row, 3, profile)
-                self.table.setItem(row, 4, item(spec.group))
-                self.table.setItem(row, 5, item(spec.part))
-                self._preview_by_path[spec.path] = (spec.profile, spec.port, spec.board_id, {source_id(a, spec.board_id) for a in source.channels})
-            self._report_notices(notices)
-            legacy = any(s.prototype.profile == "legacy_raw" for s in self._sources)
-            self.legacy_note.setText(
-                "Legacy hourly files detected. Folders merge automatically. Loose hourly files also merge while Advanced options → Merge recording parts is enabled (the default)."
-                if legacy else "Save assignments here or with Save experiment configuration on Setup.")
-            self.preview_antennas = self.antenna_names() if self._sources else set()
-            if added:
-                self.log.appendPlainText(f"Added {added} source(s); {sum(len(s.files) for s in self._sources)} raw files selected. Check the board numbers for historical sources before processing.")
-        except Exception as exc:
-            self.error(exc)
+        raw_root = Path(self.ui.services.context.save_directory) / 'raw_antenna_reads'
+        for value in paths:
+            path = Path(value).resolve()
+            try:
+                relative = path.relative_to(raw_root.resolve())
+                if len(relative.parts) > 1:
+                    path = raw_root / relative.parts[0]
+            except ValueError:
+                pass
+            value = str(path)
+            self._manual_paths.add(value)
+            self._removed_sources.discard(value)
+        self._revision += 1
+        self.scan_directory(only_changed=not rescan)
+
+    def _set_source_row(self, source, spec, row):
+        external = not Path(source.path).is_relative_to(Path(self.ui.services.context.save_directory).resolve())
+        path_item = item(source.label + (' [external]' if external else ''))
+        path_item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
+        path_item.setToolTip(source.path + "\nFirst preview PC time: " + str(iso(source.first_pc_us, self.options["timezone"]) or "unresolved; see the clock warning in the log") +
+            ("\nOffset-free raw PC times: fixed UTC" + spec.naive_utc_offset if spec.naive_utc_offset else "\nOffset-free raw PC times: experiment timezone rules") +
+            ("\nAll files in this folder share these assignments and form one continuous source." if source.is_folder else ""))
+        self.table.setItem(row, 0, path_item)
+        self.table.setItem(row, 1, item(spec.board_id))
+        port_item = item(spec.port)
+        port_item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
+        port_item.setToolTip("Connection metadata only. Antenna names use the Board number; no COM label is required.")
+        self.table.setItem(row, 2, port_item)
+        profile = QComboBox()
+        for value in PROFILES:
+            profile.addItem(PROFILE_LABELS[value], value)
+        profile.setCurrentIndex(max(0, profile.findData(spec.profile)))
+        profile.setToolTip("Detected from file contents. v1.0 and v1.5 have the same structure; A–F-only data may need a manual profile choice.")
+        self.table.setCellWidget(row, 3, profile)
+        profile.currentIndexChanged.connect(lambda *_: self._profile_edited(source.path))
+        self.table.setItem(row, 4, item(spec.group))
+        self.table.setItem(row, 5, item(spec.part))
+        self._preview_by_path[spec.path] = (spec.profile, spec.port, spec.board_id, {source_id(a, spec.board_id) for a in source.channels})
 
     def source_specs(self):
         values = []
@@ -619,13 +780,21 @@ class DataPreprocessingTab(QWidget):
         return values
 
     def input_specs(self):
+        if self._invalid_sources:
+            raise ValueError('A selected source is unavailable or conflicting. Correct it and rescan, or remove its row.')
         return [spec for source, assignment in zip(self._sources, self.source_specs()) for spec in source.expand(assignment)]
 
     def remove_selected(self):
         for row in sorted({index.row() for index in self.table.selectedIndexes()}, reverse=True):
+            path = self._sources[row].path
+            self._removed_sources.add(path)
+            self._invalid_sources.discard(path)
+            self._manual_paths.discard(path)
             self.table.removeRow(row)
             self._specs.pop(row)
             self._sources.pop(row)
+        self._source_edited()
+        self._scan_controls()
 
     def advanced(self):
         try:
@@ -647,6 +816,7 @@ class DataPreprocessingTab(QWidget):
         QMessageBox.warning(self, "Data preprocessing", str(exc))
 
     def set_running(self, running):
+        self._processing = running
         for widget in (
             self.table,
             self.config_path,
@@ -666,12 +836,16 @@ class DataPreprocessingTab(QWidget):
         ):
             widget.setEnabled(not running)
         self.cancel_button.setEnabled(running)
+        self._scan_controls()
 
     def start(self):
         try:
             if self.background_busy():
                 return
+            if self.discovery_busy() or not self._scan_ready:
+                raise ValueError('Wait for raw recording discovery to finish before preprocessing.')
             self._inventory_pending = False
+            self._job_generation = self._generation
             config = self.read_config()
             preview = self.grouping_config()
             if any(preview['recording'].get(k) != config['recording'].get(k) for k in ('layout', 'devices')):
@@ -791,6 +965,8 @@ class DataPreprocessingTab(QWidget):
         return self.process.state() != QProcess.NotRunning
 
     def request_background_stop(self):
+        self.discovery.reset()
+        self._scan_debounce.stop()
         self._inventory_pending = False
         if self.background_busy():
             self._cancel_file.touch()
@@ -800,6 +976,9 @@ class DataPreprocessingTab(QWidget):
             )
 
     def process_output(self):
+        if self._job_generation != self._generation:
+            self.process.readAllStandardOutput()
+            return
         self._buffer += bytes(self.process.readAllStandardOutput())
         while b"\n" in self._buffer:
             line, self._buffer = self._buffer.split(b"\n", 1)
@@ -814,6 +993,7 @@ class DataPreprocessingTab(QWidget):
                     self._used_antennas = set(message["antennas"])
                     self._used_ttl = set(message.get("ttl_inputs", []))
                     self._inventory_signature = self._requested_inventory_signature
+                    self._inventory_selection = self._requested_inventory_selection
                     self.log.appendPlainText(
                         f'Antenna scan complete: {len(self._used_antennas)} used RFID antennas; '
                         f'{message["ttl_reads"]:,} TTL events kept separate; {message["malformed_rows"]:,} malformed rows excluded.'
@@ -886,6 +1066,8 @@ class DataPreprocessingTab(QWidget):
             self.process_finished(-1)
 
     def process_finished(self, exit_code, *args):
+        if self._job_generation != self._generation:
+            return
         self.process_output()
         self.process_errors()
         self.set_running(False)
@@ -899,7 +1081,9 @@ class DataPreprocessingTab(QWidget):
         show_groups = self._inventory_pending and not exit_code and self._job_result and self._job_result.get("kind") == "inventory_completed"
         self._inventory_pending = False
         if show_groups:
-            QTimer.singleShot(0, self._show_output_groups)
+            generation = self._generation
+            show = self._show_output_groups
+            QTimer.singleShot(0, lambda: show() if generation == self._generation else None)
 
     def open_result(self):
         if self._output_directory:

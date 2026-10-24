@@ -1,3 +1,4 @@
+from tests.helpers import settle_discovery
 """Agreed local repair policy: single missing neighbours, no maximum time gap."""
 import json
 from tests.helpers import preprocessing_context
@@ -142,6 +143,7 @@ class DefaultWorkerGuiTests(unittest.TestCase):
         helper.PreprocessingTests.raw(self, "raw_antenna_reads/Test_COM3.csv", helper.PreprocessingTests.training_events(self))
         tab = self.window.widgets["preprocessing"]
         tab.configure_experiment(force=True)
+        settle_discovery(tab)
         self.assertEqual(tab.options["interpolation_mode"], "standard")
         self.assertTrue(tab.options["interpolate"])
         tab.csv.setChecked(True)

@@ -44,7 +44,7 @@ resources, identity comes from the locked experiment context. Status includes
 starting/running/stopping acquisition devices, tag matching, lighting connections,
 preprocessing tasks and System check.
 
-**Experiment** opens Load/Save experiment configuration, Check configuration
+**Other options** opens Load/Save experiment configuration, Check configuration
 and System check. The existing Load/Save buttons on Setup and the individual
 page controls remain available. Configuration status reports the last load/save,
 save-target notice or error. Individual pages may still contain unsaved edits;

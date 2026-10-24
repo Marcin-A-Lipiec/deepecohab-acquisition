@@ -11,11 +11,10 @@ from PySide6.QtWidgets import (
     QGroupBox,
     QHBoxLayout,
     QLabel,
-    QTableWidget,
-    QTableWidgetItem,
     QVBoxLayout,
     QWidget,
 )
+from deepecohab_recorder.widgets.detection_totals import DetectionTotalsTable
 from deepecohab_recorder.ui.wheel_scroll import (
     QComboBox,
 )
@@ -39,21 +38,31 @@ class BoardPanel(QGroupBox):
 
     def __init__(self, board_id: int, default_active: bool, parent=None) -> None:
         super().__init__(f"RFID Data Acquisition Board {board_id}", parent)
+        self.setObjectName("rfidBoardPanel")
         self.board_id = board_id
         self._ttl_labels: Dict[str, QLabel] = {}
         self._rfid_labels: Dict[str, QLabel] = {}
-        self._last_tag_snapshot: Dict[str, int] = {}
+        self._display_controller = None
+        self._indicator_columns = None
 
         root = QVBoxLayout(self)
+        root.setContentsMargins(5, 5, 5, 5)
+        root.setSpacing(5)
         setup = QFormLayout()
+        setup.setRowWrapPolicy(QFormLayout.WrapLongRows)
         self.active_check = QCheckBox("Active")
         self.active_check.setChecked(default_active)
         self.hardware_combo = QComboBox()
         self.hardware_combo.addItems(SUPPORTED_DAQ_TYPES)
         self.com_combo = QComboBox()
         self.com_combo.setEditable(True)
-        setup.addRow("Enabled:", self.active_check)
-        setup.addRow("Hardware version:", self.hardware_combo)
+        hardware_row = QHBoxLayout()
+        self.hardware_combo.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
+        self.hardware_combo.setMinimumContentsLength(12)
+        self.hardware_combo.setAccessibleName("RFID DAQ hardware version")
+        hardware_row.addWidget(self.hardware_combo, 1)
+        hardware_row.addWidget(self.active_check)
+        setup.addRow("Hardware version:", hardware_row)
         setup.addRow("DAQ COM:", self.com_combo)
         root.addLayout(setup)
 
@@ -62,18 +71,33 @@ class BoardPanel(QGroupBox):
         root.addWidget(self.status_label)
 
         self.activity_group = QGroupBox("TTL and RFID antenna activity")
+        self.activity_group.setProperty("compactDAQ", True)
         self.activity_layout = QVBoxLayout(self.activity_group)
+        self.activity_layout.setContentsMargins(4, 4, 4, 4)
+        self.activity_layout.setSpacing(5)
         root.addWidget(self.activity_group)
 
-        self.totals_group = QGroupBox("Tag totals")
+        totals_row = QHBoxLayout()
+        self.totals_group = QGroupBox("Total tag detections")
+        self.totals_group.setProperty("compactDAQ", True)
         totals_layout = QVBoxLayout(self.totals_group)
-        self.tag_table = QTableWidget(0, 2)
-        self.tag_table.setHorizontalHeaderLabels(["RFID tag", "Reads"])
-        self.tag_table.horizontalHeader().setStretchLastSection(True)
-        self.tag_table.setMinimumHeight(140)
+        totals_layout.setContentsMargins(4, 4, 4, 4)
+        self.tag_table = DetectionTotalsTable(tags=True)
         self._last_totals_update = 0
         totals_layout.addWidget(self.tag_table)
-        root.addWidget(self.totals_group, 1)
+        self.ttl_totals_group = QGroupBox("Total TTL detections")
+        self.ttl_totals_group.setProperty("compactDAQ", True)
+        ttl_layout = QVBoxLayout(self.ttl_totals_group)
+        ttl_layout.setContentsMargins(4, 4, 4, 4)
+        self.ttl_table = DetectionTotalsTable()
+        ttl_layout.addWidget(self.ttl_table)
+        self.ttl_note = QLabel("Unavailable for this hardware")
+        self.ttl_note.setWordWrap(True)
+        self.ttl_note.setProperty("tone", "muted")
+        ttl_layout.addWidget(self.ttl_note)
+        totals_row.addWidget(self.totals_group, 1)
+        totals_row.addWidget(self.ttl_totals_group, 1)
+        root.addLayout(totals_row, 1)
 
         self.active_check.toggled.connect(self._apply_enabled)
         self.active_check.toggled.connect(self.configuration_changed)
@@ -87,6 +111,9 @@ class BoardPanel(QGroupBox):
     def apply_theme(self, *args):
         for led in (*self._ttl_labels.values(), *self._rfid_labels.values()):
             led.setStyleSheet(_indicator_style(bool(led.property("activity"))))
+
+    def set_known_tags(self, tags):
+        self.tag_table.totals.set_known_tags(tags)
 
     def _clear_layout(self, layout) -> None:
         while layout.count():
@@ -102,9 +129,13 @@ class BoardPanel(QGroupBox):
         self._clear_layout(self.activity_layout)
         self._ttl_labels.clear()
         self._rfid_labels.clear()
+        self.ttl_note.setVisible(hardware == OLD_DAQ)
+        self.ttl_table.setVisible(hardware != OLD_DAQ)
+        self.ttl_table.totals.set_counts({ch: 0 for ch in protocol_for_hardware(hardware).ttl_channels})
 
-        ttl_box = QGroupBox("TTL inputs")
+        ttl_box = QWidget()
         ttl_grid = QGridLayout(ttl_box)
+        ttl_grid.setContentsMargins(0, 0, 0, 0)
         if hardware == OLD_DAQ:
             unavailable = QLabel("Unavailable for the currently chosen hardware")
             unavailable.setProperty("tone", "muted")
@@ -115,6 +146,7 @@ class BoardPanel(QGroupBox):
                 led.setStyleSheet(_indicator_style(False))
                 text = QLabel(ch.replace("TTL", "TTL "))
                 pair = QHBoxLayout()
+                pair.setSpacing(6)
                 pair.addWidget(led)
                 pair.addWidget(text)
                 pair.addStretch(1)
@@ -122,10 +154,11 @@ class BoardPanel(QGroupBox):
                 self._ttl_labels[ch] = led
         self.activity_layout.addWidget(ttl_box)
 
-        antenna_box = QGroupBox("RFID antennas")
-        grid = QGridLayout(antenna_box)
+        antenna_box = QWidget()
+        grid = self._antenna_grid = QGridLayout(antenna_box)
+        grid.setContentsMargins(0, 0, 0, 0)
         channels = protocol_for_hardware(hardware).rfid_channels
-        columns = 4
+        self._antenna_pairs = []
         for idx, ch in enumerate(channels):
             led = QLabel()
             led.setStyleSheet(_indicator_style(False))
@@ -138,22 +171,41 @@ class BoardPanel(QGroupBox):
             pair.addWidget(led)
             pair.addWidget(label)
             pair.addStretch(1)
-            grid.addWidget(pair_widget, idx // columns, idx % columns)
+            self._antenna_pairs.append(pair_widget)
             self._rfid_labels[ch] = led
         self.activity_layout.addWidget(antenna_box)
-        self.activity_layout.addStretch(1)
+        self._indicator_columns = None
+        self._layout_indicators()
+
+    def _layout_indicators(self):
+        if not hasattr(self, "_antenna_grid"):
+            return
+        columns = 16 if self.width() >= 760 else 8 if self.width() >= 480 else 4
+        if columns == self._indicator_columns:
+            return
+        self._indicator_columns = columns
+        while self._antenna_grid.count():
+            self._antenna_grid.takeAt(0)
+        for col in range(16):
+            self._antenna_grid.setColumnStretch(col, int(col < columns))
+        for idx, pair in enumerate(self._antenna_pairs):
+            self._antenna_grid.addWidget(pair, idx // columns, idx % columns)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._layout_indicators()
 
     def _apply_enabled(self, enabled: bool) -> None:
         for widget in (
             self.hardware_combo,
             self.com_combo,
-            self.tag_table,
             self.activity_group,
-            self.totals_group,
         ):
             widget.setEnabled(enabled)
         if not enabled:
             self.status_label.setText("Inactive")
+        elif self.status_label.text() == "Inactive":
+            self.status_label.setText("Ready")
 
     def set_running_state(self, running: bool) -> None:
         self.active_check.setEnabled(not running)
@@ -201,9 +253,22 @@ class BoardPanel(QGroupBox):
 
         self.com_combo.setCurrentText(port)
 
+    def reset_experiment_display(self):
+        self.tag_table.totals.set_counts({})
+        self.ttl_table.totals.set_counts({ch: 0 for ch in protocol_for_hardware(self.hardware_combo.currentText()).ttl_channels})
+        self._display_controller = None
+        self._last_totals_update = 0
+        self.status_label.setText('Ready' if self.active_check.isChecked() else 'Inactive')
+        for led in (*self._ttl_labels.values(), *self._rfid_labels.values()):
+            led.setProperty('activity', False)
+            led.setStyleSheet(_indicator_style(False))
+
     def update_from_controller(self, controller) -> None:
         if controller is None:
             return
+        if controller is not self._display_controller:
+            self._display_controller = controller
+            self._last_totals_update = 0
         self.status_label.setText(controller.status_text())
         snapshot = controller.get_status_snapshot()
         now = time.monotonic()
@@ -221,10 +286,5 @@ class BoardPanel(QGroupBox):
             return
         self._last_totals_update = now
         tags = controller.get_tag_counts_snapshot()
-        if tags != self._last_tag_snapshot:
-            self._last_tag_snapshot = tags
-            ordered = sorted(tags.items(), key=lambda kv: (-kv[1], kv[0]))
-            self.tag_table.setRowCount(len(ordered))
-            for row, (tag, count) in enumerate(ordered):
-                self.tag_table.setItem(row, 0, QTableWidgetItem(tag))
-                self.tag_table.setItem(row, 1, QTableWidgetItem(str(count)))
+        self.tag_table.totals.set_counts(tags)
+        self.ttl_table.totals.set_counts(controller.get_ttl_counts_snapshot())

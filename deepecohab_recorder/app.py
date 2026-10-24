@@ -5,6 +5,7 @@ import argparse
 from importlib import resources
 import json
 import logging
+import os
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 import sys
@@ -54,7 +55,8 @@ def main(argv=None) -> int:
         logger.info("Starting %s with %s", SOFTWARE_LABEL, sys.executable)
         if sys.platform == "win32":
             import ctypes
-            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("DeepEcoHab.Acquisition")
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+                "DeepEcoHab.Acquisition.Preview" if os.environ.get('DEEPECOHAB_ACQUISITION_PREVIEW') == '1' else "DeepEcoHab.Acquisition")
 
         from PySide6.QtCore import QTimer
         from PySide6.QtGui import QIcon
@@ -84,6 +86,8 @@ def main(argv=None) -> int:
             exc_info=(event.exc_type, event.exc_value, event.exc_traceback),
         )
         window = MainWindow()
+        if os.environ.get('DEEPECOHAB_ACQUISITION_PREVIEW') == '1':
+            window.setWindowTitle(SOFTWARE_LABEL + ' — TEST')
         window.show()
         if args.smoke_test:
             def check():

@@ -1,6 +1,6 @@
 # DeepEcoHAB Acquisition
 
-**Version 1.0.0** — Windows software for EcoHAB RFID/TTL recording, cameras,
+**Version 1.0.1** — Windows software for EcoHAB RFID/TTL recording, cameras,
 lighting, experiment metadata and data preprocessing for DeepEcoHAB analysis.
 Install it once, then open it by double-clicking its Desktop icon. You do not
 need Python knowledge, a GitHub account or Git for the normal installation.
@@ -156,7 +156,8 @@ layout dragging, recording, preprocessing and the generated files.
 
 ## 5. Find out about updates
 
-In the GUI, choose **Experiment → Check for updates**. The check displays the
+In the GUI, choose **Other options → Check for updates** (called **Experiment →
+Check for updates** in v1.0.0). The check displays the
 installed version, the latest published stable version and whether an update
 is available. It links to release notes and these installation instructions.
 The terminal equivalent is:
@@ -368,18 +369,13 @@ The helper is preferred for updates because it checks for an open GUI and helps
 prevent losing a separately installed PySpin interface. Existing local `.venv`
 launchers remain available for developers; they are separate from uv tool installs.
 
-## Documentation and development
+## Documentation
 
 - [User guide](docs/USER_GUIDE.md): configuration, acquisition and preprocessing.
 - [Installation details](docs/INSTALLATION.md) and [camera setup](docs/CAMERA_SETUP.md).
-- [Changelog](CHANGELOG.md) and [release preparation](docs/RELEASING.md).
+- [Changelog](CHANGELOG.md) and [v1.0.1 patch notes](docs/patch_notes_v1.0.1.md).
 - [Architecture](ARCHITECTURE.md), [contributing](CONTRIBUTING.md) and [testing](TESTING.md).
 - Scientific contracts: [config v8](docs/CONFIG_V8.md), GUI state v1,
   [diagnostics v12](docs/DIAGNOSTIC_V12.md), and Parquet schema v5. Application
   releases do not themselves change these contracts.
 - [MIT project license](LICENSE) and [third-party notices](THIRD_PARTY_NOTICES.md).
-
-Maintainers publish an immutable `vX.Y.Z` tag, matching packages and release notes
-for every software release. README-only corrections can remain ordinary commits
-without a version bump. Never replace an already distributed software release
-with different code under the same version; publish the next version instead.

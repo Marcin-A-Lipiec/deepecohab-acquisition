@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import stat
 import zipfile
 
@@ -24,7 +25,7 @@ SOURCE_RULES = {
     "examples": {".json"},
     "firmware": {".ino", ".h", ".cpp", ".py", ".md", ".txt", ".json", ".log", ".zip"},
     "tests": {".py", ".cpp", ".h", ".json", ".csv", ".log", ".txt", ".md"},
-    "tools": {".py"},
+    "tools": {".py", ".ps1"},
     ".github": {".yml", ".md"},
 }
 EXCLUDED = {
@@ -32,6 +33,28 @@ EXCLUDED = {
     "raw_antenna_reads", ".artifacts", "validation", ".venv", ".uv-python",
     ".uv-cache", ".pytest_cache", ".cache", "build", "dist", ".git", "__pycache__",
 }
+PRIVATE_SOURCE_PATHS = frozenset({
+    "docs/releasing.md", "docs/roadmap.md", "docs/preview_testing.md",
+    "tools/run_preview.py", "tools/setup_preview.ps1",
+})
+PRIVATE_DOCUMENT_TEXT = re.compile(
+    r"(?:\b[A-Z]:[\\/]+Users[\\/]|"
+    r"prepared for local acceptance|modernization stage\s+\d|PUBLISH_v\d)",
+    re.IGNORECASE,
+)
+
+
+def private_source_path(name):
+    parts = Path(name).as_posix().lower().split('/')
+    return ('/'.join(parts) in PRIVATE_SOURCE_PATHS or
+            (len(parts) > 1 and parts[0] == 'docs' and parts[1] in ('private', 'internal')) or
+            (parts[-1].endswith('.md') and parts[-1].startswith(
+                ('publish', 'publication_guide', 'private_', 'internal_'))))
+
+
+def _check_public_document(path, name):
+    if path.suffix.lower() == '.md' and PRIVATE_DOCUMENT_TEXT.search(path.read_text(encoding='utf-8-sig')):
+        raise ValueError(f'Remove local paths or private development notes before publication: {name}')
 
 
 def sha256(path):
@@ -60,6 +83,7 @@ def collect_source_files(root):
         _check_path(root, path)
         if not path.is_file():
             raise ValueError(f"Required release file is missing: {name}")
+        _check_public_document(path, name)
         files[name] = path
     for folder, suffixes in SOURCE_RULES.items():
         start = root / folder
@@ -68,16 +92,21 @@ def collect_source_files(root):
             raise ValueError(f"Required source directory is missing: {folder}")
         for current, directories, names in os.walk(start, followlinks=False):
             directories[:] = sorted(name for name in directories if name not in EXCLUDED
-                and not name.startswith((".stage", ".venv")) and not name.endswith(".egg-info"))
+                and not name.startswith((".stage", ".venv")) and not name.endswith(".egg-info")
+                and not private_source_path((Path(current) / name).relative_to(root).as_posix()))
             for name in directories:
                 _check_path(root, Path(current) / name)
             for name in sorted(names):
                 path = Path(current) / name
+                relative = path.relative_to(root).as_posix()
+                if private_source_path(relative):
+                    continue
                 if path.suffix.lower() not in suffixes or name.startswith((".env", "PATCH_")):
                     continue
                 _check_path(root, path)
                 if path.is_file():
-                    files[path.relative_to(root).as_posix()] = path
+                    _check_public_document(path, relative)
+                    files[relative] = path
     return dict(sorted(files.items()))
 
 
@@ -138,9 +167,14 @@ def main(argv=None):
     source_zip = directory / f"deepecohab-acquisition-{version}-github.zip"
     files = write_source_archive(ROOT, source_zip)
     artifacts.append(source_zip)
+    notes = ROOT / 'docs' / f'patch_notes_v{version}.md'
+    if notes.is_file():
+        release_notes = directory / notes.name
+        if notes.resolve() != release_notes.resolve():
+            shutil.copyfile(notes, release_notes)
+        artifacts.append(release_notes)
     report = dict(version=version, tag=f"v{version}", repository=REPOSITORY,
-                  published=False, licensing=licensing, source_files=len(files),
-                  excluded_local_directories=sorted(EXCLUDED),
+                  licensing=licensing,
                   artifacts=[dict(file=path.name, bytes=path.stat().st_size, sha256=sha256(path))
                              for path in artifacts])
     manifest = directory / "release-manifest.json"

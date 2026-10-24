@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import copy
 import csv
+import hashlib
 from decimal import Decimal, InvalidOperation
 from datetime import datetime
 import json
@@ -15,24 +17,40 @@ from .models import COMPRESSED_MESSAGE, InputFile, RawRecord, parse_pc
 from .raw_clock import RawClockError
 
 
-def detect(path: str) -> str:
-    with Path(path).open(encoding="utf-8-sig", errors="replace") as handle:
-        for line in handle:
-            text = line.strip()
-            if not text:
-                continue
-            header = re.sub(r"\s", "", text).lower()
-            if all(k in header for k in ("pctime", "channel", "boardtime", "rfidtag")):
-                return "old_decimal"
-            parts = text.split(";")
-            if len(parts) in (4, 5) and re.fullmatch(r"[0-9A-Fa-f]+", parts[2].strip()):
-                return "current" if len(parts) == 5 else "raw"
-            fields = text.split()
-            if len(fields) == 3 and re.fullmatch(r"\d{8}_\d{9,12}", fields[0]):
-                return "legacy_raw"
-            if len(fields) >= 6 and re.fullmatch(r"\d{4}\.\d{2}\.\d{2}", fields[1]):
-                return "compressed"
-            return "unknown"
+def _lines(path, preview=False):
+    """Bound discovery work even for blank prefixes and extremely long lines."""
+    with Path(path).open(encoding="utf-8-sig", errors="replace", newline="") as handle:
+        if not preview:
+            yield from handle
+            return
+        remaining = 262144
+        for _ in range(2048):
+            line = handle.readline(min(remaining + 1, 65537))
+            if not line or len(line) > remaining or (len(line) == 65537 and not line.endswith("\n")):
+                return
+            remaining -= len(line)
+            yield line
+            if remaining <= 0:
+                return
+
+
+def detect(path: str, *, preview=False) -> str:
+    for line in _lines(path, preview):
+        text = line.strip()
+        if not text:
+            continue
+        header = re.sub(r"\s", "", text).lower()
+        if all(k in header for k in ("pctime", "channel", "boardtime", "rfidtag")):
+            return "old_decimal"
+        parts = text.split(";")
+        if len(parts) in (4, 5) and re.fullmatch(r"[0-9A-Fa-f]+", parts[2].strip()):
+            return "current" if len(parts) == 5 else "raw"
+        fields = text.split()
+        if len(fields) == 3 and re.fullmatch(r"\d{8}_\d{9,12}", fields[0]):
+            return "legacy_raw"
+        if len(fields) >= 6 and re.fullmatch(r"\d{4}\.\d{2}\.\d{2}", fields[1]):
+            return "compressed"
+        return "unknown"
     return "unknown"
 
 
@@ -121,9 +139,9 @@ def parse_fields(
     )
 
 
-def records(spec: InputFile, zone: str):
+def records(spec: InputFile, zone: str, *, preview=False):
     """Yield (record, error, source text); headers and blank lines are not reads."""
-    fmt = detect(spec.path)
+    fmt = detect(spec.path, preview=preview)
     if fmt == "compressed":
         raise ValueError(f"{Path(spec.path).name}: {COMPRESSED_MESSAGE}")
     if fmt == "unknown":
@@ -132,71 +150,50 @@ def records(spec: InputFile, zone: str):
         spec.profile in ("old_decimal", "legacy_raw")
     ) or (fmt in ("old_decimal", "legacy_raw") and fmt != spec.profile):
         raise ValueError(f"Selected profile does not match {Path(spec.path).name}.")
-    with Path(spec.path).open(
-        encoding="utf-8-sig", errors="replace", newline=""
-    ) as handle:
-        order = None
-        for line_number, line in enumerate(handle, 1):
-            if not line.strip():
-                continue
-            text = line.strip()
-            try:
-                if fmt == "legacy_raw":
-                    parts = text.split()
-                else:
-                    parts = next(
-                        csv.reader(
-                            [text], delimiter="," if fmt == "old_decimal" else ";"
-                        )
+    order = None
+    for line_number, line in enumerate(_lines(spec.path, preview), 1):
+        if not line.strip():
+            continue
+        text = line.strip()
+        try:
+            if fmt == "legacy_raw":
+                parts = text.split()
+            else:
+                parts = next(
+                    csv.reader(
+                        [text], delimiter="," if fmt == "old_decimal" else ";"
                     )
-                if fmt == "old_decimal" and order is None:
-                    header = [re.sub(r"\s", "", p).lower() for p in parts]
-                    order = [
-                        header.index(k)
-                        for k in ("pctime", "channel", "boardtime", "rfidtag")
-                    ]
-                    continue
-                if order is not None:
-                    parts = [parts[i] for i in order]
-                yield parse_fields(parts, fmt, spec, zone, line_number), None, text
-            except IdentityConflict:
-                raise
-            except RawClockError as exc:
-                raise RawClockError(f"{Path(spec.path).name}, line {line_number}: {exc} No timestamp is being guessed or silently discarded.") from exc
-            except (ValueError, IndexError, OverflowError, UnicodeError) as exc:
-                yield None, f"Line {line_number}: {exc}", text
+                )
+            if fmt == "old_decimal" and order is None:
+                header = [re.sub(r"\s", "", p).lower() for p in parts]
+                order = [
+                    header.index(k)
+                    for k in ("pctime", "channel", "boardtime", "rfidtag")
+                ]
+                continue
+            if order is not None:
+                parts = [parts[i] for i in order]
+            yield parse_fields(parts, fmt, spec, zone, line_number), None, text
+        except IdentityConflict:
+            raise
+        except RawClockError as exc:
+            raise RawClockError(f"{Path(spec.path).name}, line {line_number}: {exc} No timestamp is being guessed or silently discarded.") from exc
+        except (ValueError, IndexError, OverflowError, UnicodeError) as exc:
+            yield None, f"Line {line_number}: {exc}", text
 
 
-def scan(paths: list[str], config: dict, zone: str, *, preview_limit=500, notices=None, profile_override=None, naive_utc_offset="", allow_unresolved_clock=False) -> list[dict]:
+def _scan_uncached(paths: list[str], config: dict, zone: str, *, preview_limit=500, notices=None, profile_override=None, naive_utc_offset="", allow_unresolved_clock=False, _history=None, bounded_preview=True) -> list[dict]:
     boards = list(config.get("acquisition", {}).get("boards", {}).values())
     counts = {}
     found = []
-    history = {}
-    roots = {Path(path).parent for path in paths}
-    for directory in list(roots):
-        raw_root = next((parent for parent in (directory, *directory.parents) if parent.name == 'raw_antenna_reads'), None)
-        if raw_root:
-            roots.add(raw_root.parent)
-    from deepecohab_recorder.recording_history import recording_runs
-    seen_runs = set()
-    for root in roots:
-        for run in recording_runs(root, config):
-            key = run.get('run_id') or json.dumps(run, sort_keys=True)
-            if key in seen_runs:
-                continue
-            seen_runs.add(key)
-            for device in run.get('devices', {}).values():
-                for epoch in device.get('previous_epochs', []) + [device]:
-                    filename = Path(epoch.get('data_file', '').replace('\\', '/')).name
-                    history.setdefault(filename, []).append(epoch)
+    history = _scan_history(paths, config) if _history is None else _history
     for path in paths:
-        fmt = detect(path)
+        fmt = detect(path, preview=bounded_preview)
         if fmt in ("unknown", "compressed"):
             if notices is not None:
-                notices.append({"path": path, "format": fmt, "message": COMPRESSED_MESSAGE if fmt == "compressed" else "Unrecognized raw recording format."})
+                notices.append({"path": path, "format": fmt, "message": COMPRESSED_MESSAGE if fmt == "compressed" else "Unrecognized format or inconclusive preview. Automatic previews are bounded; use Rescan experiment for a broader background check."})
             continue
-        with Path(path).open(encoding="utf-8-sig", errors="replace") as handle:
-            first = next((line.strip() for line in handle if line.strip()), "")
+        first = next((line.strip() for line in _lines(path, bounded_preview) if line.strip()), "")
         embedded = re.search(r"COM\d+", first.upper()) or re.search(r"COM\d+", Path(path).stem.upper())
         candidates = history.get(Path(path).name, [])
         meta = candidates[0] if len(candidates) == 1 else {}
@@ -237,8 +234,7 @@ def scan(paths: list[str], config: dict, zone: str, *, preview_limit=500, notice
             if profile_override:
                 profile = profile_override
             elif profile != "old_hex":
-                with Path(path).open(encoding="utf-8-sig", errors="replace") as probe:
-                    channels = {raw_channel(line.split(";", 1)[0]) for _, line in zip(range(32), probe) if ";" in line}
+                channels = {raw_channel(line.split(";", 1)[0]) for _, line in zip(range(32), _lines(path, bounded_preview)) if ";" in line}
                 numeric = bool(channels & set("0123456789"))
                 high_letters = bool(channels & set("GHIJKLMNOP"))
                 if numeric and high_letters:
@@ -269,7 +265,7 @@ def scan(paths: list[str], config: dict, zone: str, *, preview_limit=500, notice
         preview_spec = spec
         unresolved_clock = False
         try:
-            for index, (record, _, _) in enumerate(records(preview_spec, zone)):
+            for index, (record, _, _) in enumerate(records(preview_spec, zone, preview=bounded_preview)):
                 if record:
                     first_pc = record.pc_us if first_pc is None else first_pc
                     last_pc = record.pc_us
@@ -311,4 +307,67 @@ def scan(paths: list[str], config: dict, zone: str, *, preview_limit=500, notice
         counts[key] = counts.get(key, 0) + 1
         item["input"].group = "1"
         item["input"].part = counts[key]
+    return found
+
+
+def _scan_history(paths, config):
+    history = {}
+    roots = {Path(path).parent for path in paths}
+    for directory in list(roots):
+        raw_root = next((parent for parent in (directory, *directory.parents) if parent.name == 'raw_antenna_reads'), None)
+        if raw_root:
+            roots.add(raw_root.parent)
+    from deepecohab_recorder.recording_history import recording_runs
+    seen_runs = set()
+    for root in roots:
+        for run in recording_runs(root, config):
+            key = run.get('run_id') or json.dumps(run, sort_keys=True)
+            if key in seen_runs:
+                continue
+            seen_runs.add(key)
+            for device in run.get('devices', {}).values():
+                for epoch in device.get('previous_epochs', []) + [device]:
+                    filename = Path(epoch.get('data_file', '').replace('\\', '/')).name
+                    history.setdefault(filename, []).append(epoch)
+    return history
+
+
+def scan(paths: list[str], config: dict, zone: str, *, preview_limit=500, notices=None,
+         profile_override=None, naive_utc_offset="", allow_unresolved_clock=False,
+         cache=None, cancelled=lambda: False, bounded_preview=True):
+    """Reuse unchanged file probes; cache never contains complete recordings."""
+    from .models import Cancelled
+    evidence = {key: config.get('acquisition', {}).get(key) for key in ('boards', 'recording_history')}
+    stamp = hashlib.sha256(json.dumps(evidence, sort_keys=True).encode()).hexdigest()
+    history = None
+    found = []
+    for path in paths:
+        if cancelled():
+            raise Cancelled('Source discovery cancelled.')
+        stat = Path(path).stat()
+        key = (str(path), stat.st_size, stat.st_mtime_ns, stamp, zone, preview_limit,
+               profile_override, naive_utc_offset, allow_unresolved_clock, bounded_preview)
+        if cache is not None and key in cache:
+            entries, messages = copy.deepcopy(cache[key])
+        else:
+            if history is None:
+                history = _scan_history(paths, config)
+            messages = []
+            entries = _scan_uncached([path], config, zone, preview_limit=preview_limit,
+                notices=messages, profile_override=profile_override,
+                naive_utc_offset=naive_utc_offset, allow_unresolved_clock=allow_unresolved_clock,
+                _history=history, bounded_preview=bounded_preview)
+            if cache is not None:
+                if len(cache) >= 20000:
+                    cache.pop(next(iter(cache)))
+                cache[key] = copy.deepcopy((entries, messages))
+        found.extend(entries)
+        if notices is not None:
+            notices.extend(messages)
+    found.sort(key=lambda item: (item['first_pc_us'] is None, item['first_pc_us'] or 0, item['input'].path))
+    counts = {}
+    for entry in found:
+        spec = entry['input']
+        counts[spec.board_id] = counts.get(spec.board_id, 0) + 1
+        spec.part = counts[spec.board_id]
     return found

@@ -1,6 +1,6 @@
 # Preprocessing diagnostic v12
 
-As of Patch 19 the main config is version 8; see CONFIG_V8.md. The diagnostic is `<experiment>.diagnostic.json`, beside `<experiment>.config.json`. It begins with definitions and contains measured preprocessing results. The partial machine-readable report contract is `diagnostic_v12.schema.json`; scientific arrays retain the v11 record structure except for the redundant tunnel label described below.
+The main config is version 8; see CONFIG_V8.md. The diagnostic is `<experiment>.diagnostic.json`, beside `<experiment>.config.json`. It begins with definitions and contains measured preprocessing results. The partial machine-readable report contract is `diagnostic_v12.schema.json`; scientific arrays retain the v11 record structure except for the redundant tunnel label described below.
 
 ## Metadata ownership
 
@@ -51,4 +51,4 @@ Normal experiments keep output ownership under `state.acquisition.preprocessing.
 
 Completed older logs with output hashes still authorize a safe first reprocessing run. The next report uses v12 and stores integrity internally. Missing or mismatched internal ownership evidence blocks replacement of existing data; choosing a new output folder remains possible. File lists alone never authorize overwriting edited data.
 
-Patch 18 preserved all scientific data columns, values and types. Patch 19 adds the final Boolean inserted column in data schema 5 while preserving the original five columns. No converter is required. Downstream diagnostic consumers should accept version 12, read part.number and part.total, and follow settings_source when executed options are needed. Keeping the config pair and diagnostic together preserves that context.
+Data schema 5 appends the Boolean inserted column while preserving the original five columns, their values and types. No converter is required. Downstream diagnostic consumers should accept version 12, read part.number and part.total, and follow settings_source when executed options are needed. Keeping the config pair and diagnostic together preserves that context.

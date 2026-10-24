@@ -77,6 +77,19 @@ def wait_for(predicate, timeout=4):
     raise AssertionError("Timed out waiting for asynchronous operation")
 
 
+def settle_discovery(tab, timeout=20):
+    """Wait for production asynchronous discovery without bypassing its worker."""
+    from PySide6.QtWidgets import QApplication
+    app = QApplication.instance()
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        app.processEvents()
+        if not tab.discovery_busy() and tab._scan_ready:
+            return
+        time.sleep(.005)
+    raise AssertionError('Discovery did not settle: ' + tab.scan_status.text() + '\n' + tab.log.toPlainText())
+
+
 def snapshot(root):
     return SessionSnapshot(
         "Test",

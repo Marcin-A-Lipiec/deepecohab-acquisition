@@ -1,3 +1,4 @@
+from tests.helpers import settle_discovery
 from deepecohab_recorder.config_bundle import load_config_bundle
 """Legacy readers, folder continuity, virtual identities and Setup integration."""
 import copy
@@ -176,6 +177,7 @@ class SetupGuiTests(unittest.TestCase):
                 legacy(self.root / 'raw_antenna_reads' / f'board{i}' / f'hour{h}.txt', [(h*1000, i, TAG)])
         tab = self.window.widgets['preprocessing']
         tab.scan_directory()
+        settle_discovery(tab)
         for row in range(2):
             tab.table.item(row, 2).setText(f'COM{row+6}')
         return tab
@@ -218,6 +220,7 @@ class SetupGuiTests(unittest.TestCase):
             tunnel['antennas'] = [f'{2*i+1}COM6', f'{2*i+2}COM6']
         self.window.save_all()
         self.app.processEvents()
+        settle_discovery(tab)
         self.assertEqual({s.port for s in tab.input_specs()}, {'COM6', 'COM7'})
         self.assertTrue(tab.csv.isChecked())
         self.assertEqual(self.window.services.repo.data['acquisition']['preprocessing']['formats'], {'parquet': True, 'csv': True})
@@ -237,7 +240,8 @@ class SetupGuiTests(unittest.TestCase):
         # A currently configured v1.5 port must not reinterpret an archived
         # numeric channel as its first letter channel when opening the editor.
         archived = AntennaAssignmentDialog(self.window.ui, '1-1', self.window)
-        self.assertEqual(archived.mode.currentData(), 'manual')
+        self.assertTrue(archived.board_number.isEnabled())
+        self.assertTrue(archived.match.isEnabled())
         self.assertEqual(archived.value(), '1-1')
         archived.close()
         cfg = self.window.services.repo.data
@@ -246,7 +250,7 @@ class SetupGuiTests(unittest.TestCase):
         self.window.services.repo.replace(cfg)
         self.window.widgets['acquisition'].load(cfg)
         dialog = AntennaAssignmentDialog(self.window.ui, '1-1', self.window)
-        self.assertEqual(dialog.mode.currentData(), 'manual')
+        self.assertTrue(dialog.board_number.isEnabled())
         self.assertFalse(dialog.match.isEnabled())
         dialog.channel.setCurrentText('02')
         dialog.board_number.setValue(2)
@@ -273,11 +277,13 @@ class SetupGuiTests(unittest.TestCase):
         setup = self.window.widgets['setup']
         setup.directory_edit.setText(str(empty))
         self.window.directory_changed()
+        settle_discovery(self.window.widgets['preprocessing'])
         self.app.processEvents()
         self.assertEqual(tab.table.rowCount(), 0)
         self.assertEqual(tab.options['routes'], {})
         setup.directory_edit.setText(str(saved_root))
         self.window.directory_changed()
+        settle_discovery(self.window.widgets['preprocessing'])
         self.app.processEvents()
         self.assertEqual(tab.table.rowCount(), 2)
         self.assertEqual({s.port for s in tab.input_specs()}, {'COM6', 'COM7'})
@@ -288,6 +294,7 @@ class SetupGuiTests(unittest.TestCase):
         tab = self.folders()
         legacy(self.root / 'raw_antenna_reads' / 'board1' / 'hour3.txt', [(3000, 1, TAG)])
         tab.scan_directory()
+        settle_discovery(tab)
         self.assertEqual(len(tab.input_specs()), 5)
         self.assertEqual(tab.table.rowCount(), 2)
         self.assertEqual(tab.table.item(0, 2).text(), 'COM6')

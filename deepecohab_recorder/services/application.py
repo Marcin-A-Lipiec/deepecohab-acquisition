@@ -11,6 +11,7 @@ import shutil
 import threading
 import time
 from deepecohab_recorder.clock import ExperimentClock
+from deepecohab_recorder.live_boards import DEVICE_KEYS, RFID_BOARD_IDS, board_config_key
 from deepecohab_recorder.config import ConfigRepository
 from deepecohab_recorder.controllers.camera import CameraController
 from deepecohab_recorder.controllers.rfid import RFIDBoardController
@@ -40,7 +41,7 @@ def model(cls, values):
 
 
 class ApplicationServices:
-    KEYS = ("board1", "board2", "camera", "trigger")
+    KEYS = DEVICE_KEYS
 
     def __init__(self):
         self.context = ExperimentContext()
@@ -102,6 +103,19 @@ class ApplicationServices:
         self.context.set_editable_values(name, directory)
         self.context.timezone = zone
 
+    def reset_experiment_state(self):
+        """Retire completed hardware state before importing a different bundle."""
+        with self._lock:
+            if (self.busy() or self.ports.snapshot() or self.lighting.busy or
+                    (self._future is not None and not self._future.done())):
+                raise RuntimeError('Wait for devices and pending operations to finish before loading an experiment.')
+            self.run.detach()
+            self.controllers.clear()
+            self._owned.clear()
+            self.context.discard_unused_session()
+            self.repo._digests.clear()
+            self.repo._last_save_path = None
+
     def start_devices(self, keys, settings, validated=None, override=False):
         """Capture immutable inputs and check device settings before starting."""
         keys = list(dict.fromkeys(keys))
@@ -119,7 +133,7 @@ class ApplicationServices:
             ports = []
             for key in keys:
                 value = (
-                    frozen["boards"][f"board_{key[-1]}"]
+                    frozen["boards"][board_config_key(key)]
                     if key.startswith("board")
                     else frozen.get("hardware_trigger" if key == "trigger" else key, {})
                 )
@@ -151,6 +165,7 @@ class ApplicationServices:
                             "camera",
                             "hardware_trigger",
                             "launch",
+                            "ui",
                         )
                         if key in frozen
                     },
@@ -200,7 +215,7 @@ class ApplicationServices:
         try:
             snapshot = self.context.mark_running(key)
             if key.startswith("board"):
-                conf = copy.deepcopy(settings["boards"][f"board_{key[-1]}"])
+                conf = copy.deepcopy(settings["boards"][board_config_key(key)])
                 controller = RFIDBoardController(model(BoardConfig, conf))
             elif key == "camera":
                 conf = settings["camera"]
@@ -325,8 +340,7 @@ class ApplicationServices:
 
     def _update_ports(self):
         roles = {
-            "board1": "RFID_DAQ_1",
-            "board2": "RFID_DAQ_2",
+            **{f"board{i}": f"RFID_DAQ_{i}" for i in RFID_BOARD_IDS},
             "trigger": "Hardware_trigger",
         }
         previous = (

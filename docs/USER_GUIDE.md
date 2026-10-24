@@ -18,9 +18,9 @@ The header and activity/error log stay visible on every page. See
 ## Prepare an experiment
 
 - **Setup:** enter the experiment name, project name, save directory, recording location, timezone and analysis start phase. Experiment recording times are automatic by default. Check **Set start and end datetimes manually** to enable the two datetime fields, then save both overrides. Load/Save experiment configuration operates on all tabs. Selecting a directory with a compatible configuration loads it automatically. The collapsed Quick start section explains new and archived experiments and how recording times are determined.
-- **Acquisition:** set the connected boards' COM ports and hardware versions. v1.5 uses physical **A–P** channel names; v1.0 uses **0–9/A–F**; the old board displays **1–8**. Refreshing ports preserves the current choice, including a blank one. Archived data does not require a connected board.
-- **Animal details:** enter or match RFID tags and complete mouse line, genotype, genetic background, sex and birth date. Subject name, Treatment and Notes are optional; blank Subject name and Treatment save as null. Dates use `YYYY-MM-DD`; there is no Age field. Tag strings are retained as supplied; use Match tag to check the identifiers actually reported by your boards.
-- **EcoHAB layout:** create cages and tunnels, then assign each antenna to a physical channel and Board number. Identifiers look like `1-1`, `8-2` or `E-1`; the hyphen is inserted automatically. For archived boards, select Manual / archived board and use the same Board number as in Data preprocessing. The four-cage preset supplies geometry with unassigned antennas. Double-click a cage, tunnel or antenna to edit it. Labels can be dragged independently, and cage/antenna graphics remain readable while zooming. Drag empty canvas space to pan; middle-drag pans over any item or tool. Fit restores automatic framing. On small displays use the table/section scrollbars.
+- **Acquisition:** choose **Number of RFID DAQ boards** (1–4; default 1), then set each connected board's COM port and hardware version. Two panels appear side by side; three/four use a 2x2 grid. Adding panels does not start recording; use **Start RFID DAQ** or Launch. Stop RFID acquisition and finish tag matching before changing the count. v1.5 uses physical **A–P** channel names; v1.0 uses **0–9/A–F**; the old board displays **1–8**. Refreshing ports preserves the current choice, including a blank one. Archived data does not require a connected board and its board numbers are not limited to 1–4.
+- **Animal details:** enter or match RFID tags and complete mouse line, genotype, genetic background, sex and birth date. Each mouse has a **Match tag** button immediately left of **No.**; the upper selected-mouse action also remains available. A checkbox above a metadata column copies the first mouse's value to every mouse and keeps the column synchronized with the first row. Uncheck it to edit mice independently. Subject name, Treatment and Notes are optional; blank Subject name and Treatment save as null. Dates use `YYYY-MM-DD`; there is no Age field. Tag strings are retained as supplied; use Match tag to check the identifiers actually reported by your boards.
+- **EcoHAB layout:** create cages and tunnels, then assign each antenna to a physical channel and editable Board number. Identifiers look like `1-1`, `8-2` or `E-1`; the hyphen is inserted automatically. Archived recordings need no connected board or assignment-mode selector: use the same Board number as in Data preprocessing. Matching a tag fills both channel and board number. The four-cage preset supplies geometry with unassigned antennas. Double-click a cage, tunnel or antenna to edit it. Labels can be dragged independently, and cage/antenna graphics remain readable while zooming. Drag empty canvas space to pan; middle-drag pans over any item or tool. Fit restores automatic framing. On small displays use the table/section scrollbars.
 - **Environmental settings:** choose the initial light/dark phase hours and configure optional Arduino lighting control. All cycles use fixed elapsed time; daylight-saving changes cannot shorten, lengthen or realign them. There is no local-clock scheduling mode. Timezone and analysis start phase are on Setup. Temperature/humidity recording remains a future extension.
 - **Events:** enter event types and bouts. Repeated names must use one description. A name/description without times defines an unscheduled type. A bout requires a start. Leaving the end blank means “until the RFID recording ends”; GUI completion flags are retained in the secondary config. Select optional devices for each event. Selected bout compartments are saved as lists; no position (Whole habitat) saves as null. Experiment notes are saved with the Events tab.
 - **Data preprocessing:** preprocess raw recordings before downstream analysis. Place archived files in `raw_antenna_reads`; each immediate subfolder is one board's continuous recording. Assign distinct Board numbers to simultaneous historical boards, and use the same recording part for them. No COM label is needed; Port metadata is read-only connection information. Save these assignments with the metadata. Before processing, the GUI checks layout antenna labels and offers to add missing board suffixes when each antenna has one possible board. Shared channel numbers across boards require manual assignment in EcoHAB layout and a configuration save. See [docs/COMPATIBILITY.md](COMPATIBILITY.md).
@@ -86,35 +86,22 @@ deepecohab-verify-video PATH_TO_EXPERIMENT.config.json
 
 Files are flushed in batches; this is not a guarantee of zero loss during power failure. Queues are bounded, and overflow, parse failures, disk pressure and worker failures are surfaced. Maintain sufficient disk capacity for raw recordings, preprocessing and camera recording.
 
-## Extension and schema documentation
+## File formats and compatibility
 
 - [ARCHITECTURE.md](../ARCHITECTURE.md): modules, tab registration and concurrency contracts.
 - [docs/CONFIG_V8.md](CONFIG_V8.md): current canonical/secondary file ownership and fixed-cycle semantics.
 - [docs/config_v8.schema.json](config_v8.schema.json) and [docs/acquisition_gui_state_v1.schema.json](acquisition_gui_state_v1.schema.json): machine-readable contracts.
 - [docs/COMPATIBILITY.md](COMPATIBILITY.md): supported historical formats and migration behavior.
 - [TESTING.md](../TESTING.md): reproducible offline tests and hardware acceptance.
-- [CHANGELOG.md](../CHANGELOG.md): public release and internal modernization history.
+- [CHANGELOG.md](../CHANGELOG.md): changes in public releases.
 - [CONTRIBUTING.md](../CONTRIBUTING.md): development setup and compatibility expectations.
-- [docs/RELEASING.md](RELEASING.md): reproducible builds and GitHub publication steps.
 
-Pages are separate Python modules assembled by one registry. New pages normally require one module and one registry entry; production code does not depend on chaining Jupyter notebooks.
+Pages are separate Python modules assembled by one registry. New pages normally require one module and one registry entry; the installed application runs independently of notebooks.
 
-Animal details require tag, mouse line, genotype, genetic background, sex and date of birth. Subject name and Treatment are optional and save as null when blank; Notes remain optional. Genotype/background presets are editable; Sex is Male or Female only. Older incomplete animal records remain loadable but must be completed before saving.
+Animal details require tag, mouse line, genotype, genetic background, sex and date of birth. Subject name and Treatment are optional and save as null when blank; Notes remain optional. Genotype/background presets are editable; Sex is Male or Female only. Incomplete animal records can be saved as drafts; preprocessing reviews missing metadata before proceeding.
 
 Setup’s **Define experiment’s end moment** saves `end_with` for downstream analysis only. It does not stop acquisition or trim data. The fixed elapsed-time light/dark cycle and automatic/manual recording datetimes retain their existing behavior.
 
 A tunnel’s `length` is the distance in centimetres between the centres of its two main antennas. Unknown or inapplicable length is null. Historical multi-antenna measurements remain in GUI state for review.
 
 Add a whole board folder to report its raw files as one recording. Routine member files and internal boundaries are omitted from the diagnostic; real acquisition interruptions and clock resets remain. Separately selected files retain the adjustable three-minute gap reporting threshold. See [docs/DIAGNOSTIC_V12.md](DIAGNOSTIC_V12.md) for the compact report contract and its embedded glossary.
-
-## Project layout
-
-Runtime code and packaged assets are in `deepecohab_recorder/`; maintained guides
-are in `docs/`; regression fixtures/tests, firmware and developer commands are
-in `tests/`, `firmware/` and `tools/`. Historical format contracts are in
-`docs/legacy/`. Generated evidence belongs in ignored `.artifacts/`. The supplied
-reference checkout is retained and excluded from packaging and tracking.
-`Duplicate_test/` contains local investigation data and is also excluded; it is
-not part of the regression suite or a public example.
-See [docs/PERFORMANCE.md](PERFORMANCE.md) for maintenance details and
-[docs/ROADMAP.md](ROADMAP.md) for the remaining release stage.

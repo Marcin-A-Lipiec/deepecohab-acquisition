@@ -10,7 +10,7 @@ from deepecohab_recorder import cli
 from deepecohab_recorder.services import updates
 
 
-def release(version="1.0.1", **changes):
+def release(version="99.0.0", **changes):
     name = f"deepecohab_acquisition-{version}-py3-none-any.whl"
     result = dict(tag_name=f"v{version}", draft=False, prerelease=False,
         html_url=f"{updates.REPOSITORY}/releases/tag/v{version}",
@@ -157,7 +157,7 @@ def test_gui_check_and_cancel_never_start_or_install_hardware(monkeypatch):
     assert not dialog.check_button.isEnabled()
     first.readyRead.emit()
     first.finished.emit()
-    assert "1.0.1 is available" in dialog.status.text()
+    assert "99.0.0 is available" in dialog.status.text()
     assert dialog.reply is None
     dialog.check()
     dialog.reject()

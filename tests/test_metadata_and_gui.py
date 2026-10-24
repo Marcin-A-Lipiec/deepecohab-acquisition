@@ -1,3 +1,4 @@
+from tests.helpers import settle_discovery
 from deepecohab_recorder.config_bundle import load_config_bundle
 """Patch 6 integration: named metadata, grouped bouts, Qt controls and real worker."""
 import copy
@@ -126,9 +127,12 @@ class Patch6GuiTests(unittest.TestCase):
         self.window.widgets['setup'].directory_edit.setText(str(self.root))
         self.cfg = valid_config()
         self.window.services.repo.replace(self.cfg)
+        self.window.widgets['setup'].load(self.cfg)
+        self.window._sync_context()
         self.window._apply(self.cfg)
         self.window._sync_context()
         self.app.processEvents()
+        settle_discovery(self.window.widgets['preprocessing'])
 
     def tearDown(self):
         self.window.close()
@@ -193,6 +197,7 @@ class Patch6GuiTests(unittest.TestCase):
         (raw / 'not_raw.csv').write_text('antenna,animal_id,datetime,time_spent,internal_board_timestamp\n')
         tab = self.window.widgets['preprocessing']
         tab.configure_experiment(force=True)
+        settle_discovery(tab)
         return tab
 
     def test_auto_discovery_output_groups_and_real_background_process(self):
@@ -204,6 +209,7 @@ class Patch6GuiTests(unittest.TestCase):
         self.assertEqual([s.group for s in tab.input_specs()], ['1', '1'])
         self.assertEqual([s.part for s in tab.input_specs()], [1, 2])
         tab.scan_directory()
+        settle_discovery(tab)
         self.assertEqual(tab.table.rowCount(), 2)
         dialog = OutputGroupsDialog(tab)
         self.assertFalse(any(s.startswith('TTL') for s in dialog.sources))

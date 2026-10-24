@@ -9,7 +9,12 @@ from .interpolation import PhysicalGraph
 
 
 def review_metadata(config, settings):
-    issues = validate_config(config)
+    try:
+        boards = metadata_boards(config, settings.inputs)
+        catalogue_errors = []
+    except ValueError as exc:
+        boards, catalogue_errors = {}, [str(exc)]
+    issues = catalogue_errors + validate_config(config, boards)
     recording = config["recording"]
     animals = recording["cohort"]["animals"]
     tags = [str(animal.get("tag") or "").strip().upper() for animal in animals]
@@ -20,7 +25,7 @@ def review_metadata(config, settings):
     assignments = check_layout(config, settings.inputs)
     graph = PhysicalGraph(layout, {spec.board_id for spec in settings.inputs},
                           devices=recording.get("devices", []))
-    incomplete_layout = bool(validate_layout(layout, metadata_boards(config), recording.get("devices", [])) or
+    incomplete_layout = bool(catalogue_errors or validate_layout(layout, boards, recording.get("devices", [])) or
                              graph.problems or any(assignments.values()))
     changes = {}
     if settings.whitelist and incomplete_tags:

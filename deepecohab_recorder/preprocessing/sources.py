@@ -1,5 +1,5 @@
 """File/folder source discovery and portable assignments; no Qt or hardware I/O."""
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field, fields, replace
 from pathlib import Path
 
 from .models import InputFile
@@ -44,6 +44,18 @@ class SourceGroup:
     embedded_ports: set[str] = field(default_factory=set)
     embedded_boards: set[int] = field(default_factory=set)
 
+    def to_dict(self):
+        defaults = {f.name: f.default for f in fields(InputFile) if f.name != 'path'}
+        return dict(path=self.path, is_folder=self.is_folder,
+            files=[{k: v for k, v in vars(spec).items() if k == 'path' or v != defaults.get(k)} for spec in self.files],
+            first_pc_us=self.first_pc_us, channels=sorted(self.channels),
+            embedded_ports=sorted(self.embedded_ports), embedded_boards=sorted(self.embedded_boards))
+
+    @classmethod
+    def from_dict(cls, value):
+        return cls(value['path'], value['is_folder'], [InputFile(**s) for s in value['files']],
+                   value['first_pc_us'], set(value['channels']), set(value['embedded_ports']), set(value['embedded_boards']))
+
     @property
     def prototype(self):
         return self.files[0]
@@ -68,9 +80,10 @@ class SourceGroup:
                 for spec in self.files]
 
 
-def inspect_source(path, config, zone, *, saved=None, active=(), allow_unresolved_clock=False):
+def inspect_source(path, config, zone, *, saved=None, active=(), allow_unresolved_clock=False,
+                   paths=None, cache=None, cancelled=lambda: False, bounded_preview=True):
     path = Path(path).resolve()
-    paths = candidate_files(path)
+    paths = candidate_files(path) if paths is None else paths
     if any(str(p.resolve()) in active for p in paths):
         return None, [{'path': str(path), 'format': 'active', 'message': 'Source still being recorded; scan it after recording stops.'}]
     notices = []
@@ -81,7 +94,7 @@ def inspect_source(path, config, zone, *, saved=None, active=(), allow_unresolve
     found = scan([str(p) for p in paths], local_config, zone, preview_limit=24,
                  notices=notices, profile_override=(saved or {}).get('profile'),
                  naive_utc_offset=(saved or {}).get('naive_utc_offset', ''),
-                 allow_unresolved_clock=allow_unresolved_clock)
+                 allow_unresolved_clock=allow_unresolved_clock, cache=cache, cancelled=cancelled, bounded_preview=bounded_preview)
     if not found:
         return None, notices
     profiles = {entry['input'].profile for entry in found}
@@ -91,7 +104,7 @@ def inspect_source(path, config, zone, *, saved=None, active=(), allow_unresolve
         # the same board containing G–P identifies the whole source as v1.5.
         found = scan([str(p) for p in paths], local_config, zone, preview_limit=24,
                      profile_override='v1.5', naive_utc_offset=(saved or {}).get('naive_utc_offset', ''),
-                     allow_unresolved_clock=allow_unresolved_clock)
+                     allow_unresolved_clock=allow_unresolved_clock, cache=cache, cancelled=cancelled, bounded_preview=bounded_preview)
         profiles = {'v1.5'}
     ports = {entry['embedded_port'] for entry in found if entry['embedded_port']}
     boards = {entry['embedded_board'] for entry in found if entry['embedded_board'] is not None}

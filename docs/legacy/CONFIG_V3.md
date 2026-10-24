@@ -47,9 +47,9 @@ The first RFID initialization time and last RFID stop time are written to `start
 
 The service also writes `analysis_start_datetime`, `missing_initial_seconds` and `recorded_before_origin_seconds`. If the selected phase is active at initialization, use that phase's onset. Otherwise use the next onset. Differences use absolute elapsed seconds, including timezone offset changes. For a 13:20 start inside the dark phase beginning at 12:00, the actual start stays 13:20 and analysis origin is 12:00 with 4,800 missing seconds. No raw data is discarded.
 
-Patch 3 anchors new recording cycles once and computes phase boundaries in elapsed seconds. Previously saved configs without a fixed anchor retain `phase_schedule.mode: "legacy_local"` on import. Starting a new RFID run or applying Arduino lighting establishes a fixed schedule; importing an old experiment alone does not reinterpret its history. See the current [firmware inventory](../FIRMWARE.md). This historical control protocol was superseded by passive acquisition.
+New recording cycles use one fixed anchor and compute phase boundaries in elapsed seconds. Previously saved configs without a fixed anchor retain `phase_schedule.mode: "legacy_local"` on import. Starting a new RFID run or applying Arduino lighting establishes a fixed schedule; importing an old experiment alone does not reinterpret its history. See the current [firmware inventory](../FIRMWARE.md). This historical control protocol was superseded by passive acquisition.
 
-## Passive lickometer recording (Patch 4)
+## Passive lickometer recording
 
 `acquisition.lickometer.control_mode` is `"passive_usb"`. The GUI saves the COM port, enabled flag and fixed channel mapping, and records unsolicited observations at 115200 baud. Config version remains 3; `acquisition._provenance.software_patch` is 4.
 

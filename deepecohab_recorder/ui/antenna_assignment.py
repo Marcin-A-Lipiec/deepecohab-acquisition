@@ -1,5 +1,6 @@
 """Assign a physical channel and logical board, including archived recordings."""
 import re
+from PySide6.QtCore import QEvent, QSize, QTimer
 from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
@@ -10,12 +11,12 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QVBoxLayout,
+    QScrollArea,
 )
 from deepecohab_recorder.ui.wheel_scroll import (
     QComboBox,
     QSpinBox,
 )
-from deepecohab_recorder.protocols.rfid import protocol_for_hardware
 from deepecohab_recorder.source_identity import split_source, source_id
 from deepecohab_recorder.ui.common import MatchDialog, wrapping_form
 
@@ -28,22 +29,27 @@ class AntennaAssignmentDialog(QDialog):
         self.original_device = device or {}
         self.physical_layout = layout or {}
         self.setWindowTitle('Assign layout antenna')
-        self.resize(610, 650)
-        layout = QVBoxLayout(self)
+        self._sizing = False
+        outer = QVBoxLayout(self)
+        self.scroll = QScrollArea()
+        self.scroll.setWidgetResizable(True)
+        self.scroll.setFrameShape(QScrollArea.NoFrame)
+        self.contents = QWidget()
+        layout = QVBoxLayout(self.contents)
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.scroll.setWidget(self.contents)
+        outer.addWidget(self.scroll, 1)
+        self._size_timer = QTimer(self)
+        self._size_timer.setSingleShot(True)
+        self._size_timer.timeout.connect(self.fit_contents)
         form = wrapping_form()
         layout.addLayout(form)
-        self.mode = QComboBox()
-        self.mode.addItem('Configured acquisition board', 'hardware')
-        self.mode.addItem('Manual / archived board', 'manual')
-        self.board = QComboBox()
         self.boards = [b for b in ui.hardware_settings()['boards'].values() if b.get('active')]
-        for board in self.boards:
-            self.board.addItem(f"RFID DAQ {board['board_id']} / {board['hardware']}", board)
         self.channel = QComboBox()
+        self.channel.setEditable(True)
+        self.channel.addItems(list('1234567890ABCDEFGHIJKLMNOP'))
         self.board_number = QSpinBox()
         self.board_number.setRange(1, 9999)
-        form.addRow('Assignment method:', self.mode)
-        form.addRow('DAQ board:', self.board)
         form.addRow('Physical antenna channel:', self.channel)
         form.addRow('Board number:', self.board_number)
         self.preview = QLabel()
@@ -114,34 +120,69 @@ class AntennaAssignmentDialog(QDialog):
         self.match = QPushButton('Match antenna by presenting a tag')
         self.match.clicked.connect(self.match_antenna)
         layout.addWidget(self.match)
-        self.mode.currentIndexChanged.connect(self.update_controls)
-        self.board.currentIndexChanged.connect(self.update_controls)
         self.channel.currentTextChanged.connect(self.update_preview)
         self.board_number.valueChanged.connect(self.update_preview)
-        self.update_controls()
+        available = any(b.get('com_port') for b in self.boards)
+        self.match.setEnabled(available)
+        self.match.setToolTip('Present a tag to any enabled Acquisition board; its channel and board number will be filled in.' if available else
+                             'Enable an RFID board and choose its COM port on Acquisition to match a tag. Manual assignment is always available.')
         channel, number, port = split_source(current)
         if number is None and port:
             candidates = {s.board_id for s in ui.preprocessing_sources() if s.port.upper() == port}
             candidates |= {b['board_id'] for b in self.boards if b.get('com_port', '').upper() == port}
             if len(candidates) == 1:
                 number = candidates.pop()
-        index = next((i for i, b in enumerate(self.boards) if number == b['board_id'] and channel in protocol_for_hardware(b['hardware']).rfid_channels), None)
-        if index is None:
-            self.mode.setCurrentIndex(1)
-        else:
-            self.board.setCurrentIndex(index)
         if number:
             self.board_number.setValue(number)
         if channel not in ('', '?'):
             self.channel.setCurrentText(str(int(channel)) if re.fullmatch(r'0?[1-8]', channel) else channel)
-        if not self.boards:
-            self.mode.model().item(0).setEnabled(False)
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttons.accepted.connect(self.validate_and_accept)
         buttons.rejected.connect(self.reject)
-        layout.addWidget(buttons)
+        outer.addWidget(buttons)
         self.update_preview()
         self.update_group_preview()
+        self.fit_contents()
+
+    def fit_contents(self):
+        if self._sizing:
+            return
+        self._sizing = True
+        try:
+            available = self.screen().availableGeometry()
+            maximum = QSize(max(240, available.width() - 40), max(200, available.height() - 80))
+            # A moderate width keeps explanatory labels readable without a large
+            # empty form. Height depends on the controls visible for this role.
+            width = min(max(450, self.contents.minimumSizeHint().width() + 32), 580, maximum.width())
+            self.resize(width, self.height())
+            self.layout().activate()
+            self.contents.layout().activate()
+            margins = self.layout().contentsMargins()
+            form_width = max(1, width - margins.left() - margins.right() - 8)
+            content_layout = self.contents.layout()
+            content_height = content_layout.totalHeightForWidth(form_width)
+            if content_height < 0:
+                content_height = self.contents.sizeHint().height()
+            button_height = self.layout().itemAt(1).widget().sizeHint().height()
+            height = content_height + button_height + margins.top() + margins.bottom() + self.layout().spacing() + 8
+            self.setMaximumSize(maximum)
+            self.resize(width, min(height, maximum.height()))
+            if self.isVisible():
+                frame = self.frameGeometry()
+                self.move(max(available.left(), min(frame.left(), available.right() - frame.width() + 1)),
+                          max(available.top(), min(frame.top(), available.bottom() - frame.height() + 1)))
+        finally:
+            self._sizing = False
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self._size_timer.start(0)
+
+    def event(self, event):
+        result = super().event(event)
+        if hasattr(self, "_size_timer") and event.type() in (QEvent.FontChange, QEvent.StyleChange):
+            self._size_timer.start(0)
+        return result
 
     def update_group_preview(self, *_):
         import copy
@@ -178,6 +219,7 @@ class AntennaAssignmentDialog(QDialog):
         self.main_slot_label.setVisible(not device and self.require_slot)
         self.ttl_channel.setEnabled(self.link_ttl.isChecked())
         self.ttl_board.setEnabled(self.link_ttl.isChecked())
+        self._size_timer.start(0)
 
     def device_value(self):
         if self.role.currentData() != 'device':
@@ -192,24 +234,6 @@ class AntennaAssignmentDialog(QDialog):
                     description=self.device_description.text().strip() or None,
                     antenna=self.value(), position=position,
                     TTL_port=source_id(self.ttl_channel.currentText(), self.ttl_board.value()) if self.link_ttl.isChecked() else None)])[0]
-
-    def update_controls(self):
-        manual = self.mode.currentData() == 'manual'
-        previous = self.channel.currentText()
-        self.board.setEnabled(not manual and bool(self.boards))
-        self.board_number.setEnabled(manual)
-        self.channel.setEditable(manual)
-        self.channel.clear()
-        if manual:
-            self.channel.addItems(list('1234567890ABCDEFGHIJKLMNOP'))
-            if previous:
-                self.channel.setCurrentText(previous)
-        elif self.board.currentData():
-            board = self.board.currentData()
-            self.channel.addItems(list(protocol_for_hardware(board['hardware']).rfid_channels))
-            self.board_number.setValue(board['board_id'])
-        self.match.setEnabled(not manual and bool(self.boards) and bool((self.board.currentData() or {}).get('com_port')))
-        self.update_preview()
 
     def update_preview(self, *_):
         self.preview.setText(source_id(self.channel.currentText() or '?', self.board_number.value()))
@@ -236,8 +260,5 @@ class AntennaAssignmentDialog(QDialog):
         matcher = MatchDialog(self.ui, self)
         if matcher.exec() and matcher.selected:
             _, source, board_id = matcher.selected
-            for i, board in enumerate(self.boards):
-                if board['board_id'] == board_id:
-                    self.board.setCurrentIndex(i)
-                    self.channel.setCurrentText(split_source(source)[0])
-                    break
+            self.board_number.setValue(board_id)
+            self.channel.setCurrentText(split_source(source)[0])

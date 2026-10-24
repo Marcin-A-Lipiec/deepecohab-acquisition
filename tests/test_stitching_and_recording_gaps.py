@@ -205,6 +205,8 @@ class GuiTests(unittest.TestCase):
             self.assertEqual(show.call_count, 2)
             tab.table.selectRow(1)
             tab.remove_selected()
+            from tests.helpers import settle_discovery
+            settle_discovery(tab)
             tab.output_groups()
             self.assertTrue(tab.process.waitForFinished(15000))
             self.app.processEvents()

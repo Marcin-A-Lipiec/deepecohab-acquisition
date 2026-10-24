@@ -215,7 +215,8 @@ def test_active_indicator_recolors_without_resetting_status_or_counts(window, qt
     panel = window.widgets['acquisition'].panels[1]
     controller = SimpleNamespace(status_text=lambda: 'Running: test data',
         get_status_snapshot=lambda: {'A': {'t': time.monotonic()}},
-        get_tag_counts_snapshot=lambda: {'TEST': 19})
+        get_tag_counts_snapshot=lambda: {'TEST': 19},
+        get_ttl_counts_snapshot=lambda: {'TTL1': 3})
     panel._last_totals_update = 0
     panel.update_from_controller(controller)
     led = panel._rfid_labels['A']
@@ -225,7 +226,7 @@ def test_active_indicator_recolors_without_resetting_status_or_counts(window, qt
         assert theme.TOKENS[mode]['good'] in led.styleSheet()
         assert led.property('activity')
         assert panel.status_label.text() == 'Running: test data'
-        assert panel.tag_table.item(0, 1).text() == '19'
+        assert panel.tag_table.model().data(panel.tag_table.model().index(0, 1)) == '19'
 
 
 @pytest.mark.parametrize('mode', ['light', 'dark'])

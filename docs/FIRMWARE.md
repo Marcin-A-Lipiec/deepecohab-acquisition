@@ -4,7 +4,7 @@ The application does not change or flash firmware. Software tests simulate USB
 transport; electrical timing, camera SDK operation and actual boards require
 bench acceptance on the acquisition PC.
 
-| Device/build present in this copy | Location and role |
+| Device/firmware reference | Location and role |
 |---|---|
 | UNO R4 standalone lickometer v8.0 | `firmware/Capacitive_Lickometer_UNO_R4_v8_0_Standalone` |
 | UNO R4 standalone lickometer v8.1 | `firmware/Capacitive_Lickometer_UNO_R4_v8_1_Standalone`; later range-search code |
@@ -17,7 +17,7 @@ The v8.1 diagnostic build's `READ_ME_FIRST.md` explicitly reports an unresolved
 physical fault. Its existing native-test logs establish simulation results,
 not a fix or certification for experimental acquisition. Preserve the known
 working firmware on real boards until the corresponding hardware investigation
-is complete. No new firmware is necessary for modernization.
+is complete. Installing the application does not require flashing these examples.
 
 Standalone lickometers sense autonomously and send BNC rising edges to DAQ TTL
 inputs. The production GUI has no USB lickometer-control tab. Retained passive

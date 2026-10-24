@@ -253,6 +253,12 @@ class CameraControlTab(QWidget):
     def load(self, data):
         self.apply_config(data["acquisition"]["camera"])
 
+    def reset_experiment_display(self):
+        self._preview_timer.stop()
+        self._preview_cache = PreviewCache()
+        self.preview_label.clear()
+        self.status_label.setText('Ready')
+
     def refresh(self):
         controller = self.ui.services.controllers.get("camera")
         self.set_running_state(self.ui.services.busy("camera"))

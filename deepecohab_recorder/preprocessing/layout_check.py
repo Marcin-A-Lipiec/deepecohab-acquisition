@@ -21,14 +21,19 @@ def check_layout(config, inputs):
     by_channel = defaultdict(set)
     profiles, ports = {}, defaultdict(set)
     saved = config.get('acquisition', {}).get('preprocessing', {}).get('sources', [])
-    for source in [*saved, *(s.__dict__ for s in inputs)]:
+    selected = {spec.board_id for spec in inputs}
+    source_profiles = defaultdict(set)
+    for source in [*(s for s in saved if s.get('board_id') not in selected), *(vars(s) for s in inputs)]:
         board, profile = source.get('board_id'), source.get('profile')
         if not board or profile not in CHANNELS:
             continue
         profiles.setdefault(board, set()).update(CHANNELS[profile])
+        source_profiles[board].add(frozenset(CHANNELS[profile]))
         if source.get('port'):
             ports[source['port'].upper()].add(board)
     for board, channels in profiles.items():
+        if len(source_profiles[board]) > 1:
+            channels.clear()  # Incompatible profiles must not create a permissive union.
         for channel in channels:
             by_channel[channel].add(board)
     known_boards = {b.get('board_id'): b for b in config.get('acquisition', {}).get('boards', {}).values()

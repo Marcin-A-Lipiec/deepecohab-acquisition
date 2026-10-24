@@ -5,6 +5,7 @@ import queue
 import threading
 from deepecohab_recorder.protocols.rfid import protocol_for_hardware
 from deepecohab_recorder.utils import source_channel_id
+from deepecohab_recorder.live_boards import RFID_BOARD_IDS
 
 
 class MatchSession:
@@ -39,7 +40,8 @@ class MatchSession:
         connections, readers = [], []
         try:
             for board in self.boards.values():
-                if not board.get("active") or not board.get("com_port"):
+                if (board.get("board_id") not in RFID_BOARD_IDS or
+                        not board.get("active") or not board.get("com_port")):
                     continue
                 key = f"board{board['board_id']}"
                 controller = self.services.controllers.get(key)

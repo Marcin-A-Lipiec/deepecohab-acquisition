@@ -336,7 +336,8 @@ def load_config_bundle(path, notices=None):
         if missing:
             for board in result['acquisition']['boards'].values():
                 board['active'] = False
-            result['acquisition']['launch'].update(board1=False, board2=False, camera=False, trigger=False)
+            from .live_boards import DEVICE_KEYS
+            result['acquisition']['launch'].update({key: False for key in DEVICE_KEYS})
         from .recording_history import import_history
         return import_history(result, path.parent)
 

@@ -7,6 +7,5 @@ behavior. Current guides are [config v8](../CONFIG_V8.md),
 and [firmware inventory](../FIRMWARE.md).
 
 Config schemas v3 through v7 accompany their historical descriptions. Diagnostic
-v11 precedes the linked-settings v12 report. Working-base lickometer notes record
-the supplied historical wiring and sensor decisions; their absent sketch is not
-provided or certified by this application.
+v11 precedes the linked-settings v12 report. Historical lickometer notes describe older wiring and USB event formats;
+they do not certify unbundled firmware or describe current GUI behavior.

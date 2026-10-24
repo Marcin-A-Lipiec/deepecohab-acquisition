@@ -63,6 +63,8 @@ class MainWindow(QMainWindow):
             experiment_name_changed=self.experiment_name_changed,
             prepare_matching=self.prepare_matching,
             experiment_timezone=self.experiment_timezone,
+            rfid_boards_changed=self.rfid_boards_changed,
+            animal_tags_changed=self.animal_tags_changed,
             layout_state=lambda: self.widgets["layout"].read(),
             layout_compartments=lambda: compartment_names(self.widgets['layout'].graph),
         )
@@ -174,7 +176,8 @@ class MainWindow(QMainWindow):
         else:
             name, directory = self.widgets["setup"].context_values()
         self.header.set_identity(name or "Unnamed experiment", str(directory))
-        names = {"board1": "RFID board 1", "board2": "RFID board 2", "camera": "Camera", "trigger": "Hardware trigger"}
+        from deepecohab_recorder.live_boards import RFID_BOARD_IDS
+        names = {**{f"board{i}": f"RFID board {i}" for i in RFID_BOARD_IDS}, "camera": "Camera", "trigger": "Hardware trigger"}
         statuses = [f"{names.get(key, key)}: {value.lower()}" for key, value in services.states.items() if value != "Stopped"]
         matching = [port for port, owner in owned.items() if owner == "tag matching"]
         if matching:
@@ -252,6 +255,16 @@ class MainWindow(QMainWindow):
                     set_path(config, path, value)
         return config["acquisition"]
 
+    def rfid_boards_changed(self, count):
+        launch = self.widgets.get("launch")
+        if launch is not None:
+            launch.set_board_count(count)
+
+    def animal_tags_changed(self, tags):
+        acquisition = self.widgets.get("acquisition")
+        if acquisition is not None:
+            acquisition.set_known_tags(tags)
+
     def _sync_context(self):
         name, directory = self.widgets["setup"].context_values()
         if not directory:
@@ -311,7 +324,12 @@ class MainWindow(QMainWindow):
             path = self.services.repo.discover()
             if path is not None:
                 source = read_json(path)
+                load_config_bundle(path)  # Validate completely before retiring the current state.
+                self.services.reset_experiment_state()
                 config = self.services.repo.import_file(path)
+                self.widgets['setup'].load(config)
+                self._sync_context()
+                self._reset_experiment_displays()
                 self._apply(config)
                 self._sync_context()
                 self._legacy_notice(source)
@@ -354,12 +372,17 @@ class MainWindow(QMainWindow):
             if not path:
                 return
             source = read_json(path)
+            load_config_bundle(path)
+            self.services.reset_experiment_state()
             config = self.services.repo.import_file(path)
             self.widgets["setup"].directory_edit.setText(str(path.parent))
-            self.services.run.detach()
+            self.widgets['setup'].load(config)
+            self._sync_context()
+            self._reset_experiment_displays()
             self._apply(config)
             self._sync_context()
             self._directory = str(self.services.repo.paths()[1].parent)
+            self._directory_identity = (self._directory, self.services.context.experiment_name)
             self._legacy_notice(source)
             self.config_status.setText(
                 f"Imported {path.name}; save target is {self.services.repo.paths()[1].name}."
@@ -388,6 +411,11 @@ class MainWindow(QMainWindow):
             self._legacy_notice(source)
         except Exception as exc:
             self._error(exc)
+
+    def _reset_experiment_displays(self):
+        for panel in self.widgets['acquisition'].panels.values():
+            panel.reset_experiment_display()
+        self.widgets['camera'].reset_experiment_display()
 
     def _save(self, updates):
         self._base_for_save()
@@ -420,7 +448,10 @@ class MainWindow(QMainWindow):
     def check_config(self):
         try:
             self._sync_context()
-            _, errors, notice = self.services.repo.preflight()
+            from deepecohab_recorder.schema import metadata_boards
+            sources = self.widgets['preprocessing'].input_specs()
+            _, errors, notice = self.services.repo.preflight(
+                metadata_boards(self.services.repo.data, sources) if sources else None)
             QMessageBox.information(
                 self,
                 "Configuration check",
@@ -629,5 +660,6 @@ class MainWindow(QMainWindow):
                     "Stopping devices and flushing data before closing…"
                 )
             return
+        self.widgets['preprocessing'].close_discovery()
         self.services.shutdown()
         event.accept()

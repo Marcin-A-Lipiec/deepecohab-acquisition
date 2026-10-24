@@ -1,3 +1,4 @@
+from tests.helpers import settle_discovery
 """Draft metadata may be saved and explicitly reviewed before preprocessing."""
 
 import json
@@ -47,6 +48,7 @@ class DraftMetadataGuiTests(unittest.TestCase):
                         "A-1;1A63A81904;B;2026-09-01T12:00:00.100+02:00;1\n")
         tab = self.window.widgets["preprocessing"]
         tab.add_paths([path])
+        settle_discovery(tab)
         return tab
 
     def test_preprocessing_warns_about_missing_metadata_and_cancel_starts_no_worker(self):

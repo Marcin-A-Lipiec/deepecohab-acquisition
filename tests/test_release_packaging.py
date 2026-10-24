@@ -25,6 +25,9 @@ def test_source_zip_excludes_recordings_environments_secrets_and_reference(sourc
         "personal-experiment/config.json", "dist/vendor.whl", "tests/__pycache__/test.pyc",
         "tests/Duplicate_test/recording.json", "tools/.env.secret.json", "docs/PATCH_99.md",
         "deepecohab_recorder/recording.parquet", "deepecohab_recorder/recording.mp4",
+        "docs/RELEASING.md", "docs/ROADMAP.md", "docs/PREVIEW_TESTING.md",
+        "docs/PUBLISH_v1.0.1.md", "docs/private/notes.md", "docs/internal/plan.md",
+        "tools/run_preview.py", "tools/setup_preview.ps1",
     )
     for name in private:
         path = source / name
@@ -51,6 +54,15 @@ def test_source_zip_excludes_recordings_environments_secrets_and_reference(sourc
     original = destination.read_bytes()
     release.write_source_archive(source, destination)
     assert destination.read_bytes() == original
+
+
+@pytest.mark.parametrize('name', ['README.md', 'docs/USER_GUIDE.md', 'docs/patch_notes_v1.0.1.md'])
+def test_publication_rejects_local_paths_in_public_documentation(source, name):
+    path = source / name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(r'Local instructions: C:\Users\private-user\Desktop\PersonalProject\experiment', encoding='utf-8')
+    with pytest.raises(ValueError, match='local paths or private development notes'):
+        release.collect_source_files(source)
 
 
 def test_publication_gate_requires_both_license_file_and_project_metadata(source, monkeypatch):

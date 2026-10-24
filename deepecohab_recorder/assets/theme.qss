@@ -9,6 +9,8 @@ QWidget:disabled { color: @ink-3; }
 QGroupBox { background: @surface; border: 1px solid @line; border-radius: 8px; margin-top: 16px; padding: 12px 10px 10px; }
 QGroupBox::title { subcontrol-origin: margin; subcontrol-position: top left; left: 10px; padding: 0 5px; color: @ink; font-weight: 600; }
 QGroupBox:disabled { border-color: @line; color: @ink-3; }
+QGroupBox#rfidBoardPanel { padding: 5px 6px 6px; }
+QGroupBox[compactDAQ="true"] { padding: 4px; margin-top: 16px; }
 QLineEdit, QComboBox, QAbstractSpinBox, QTextEdit, QPlainTextEdit, QTextBrowser {
     background: @surface; border: 1px solid @line-strong; border-radius: 6px; padding: 5px 7px;
     selection-background-color: @accent; selection-color: @accent-ink;
@@ -23,6 +25,11 @@ QPushButton:focus, QToolButton:focus { border-color: @accent; }
 QPushButton#primary, QPushButton[role="primary"] { background: @accent; color: @accent-ink; border-color: @accent; font-weight: 600; }
 QPushButton#primary:hover, QPushButton[role="primary"]:hover { background: @accent-text; border-color: @accent-text; }
 QPushButton[role="stop"] { color: @bad; border-color: @bad; background: @bad-soft; }
+QPushButton[role="start"] { color: @good; border-color: @good; background: @good-soft; }
+QPushButton[role="start"]:hover { border-color: @good; background: @surface; }
+QPushButton[role="start"]:disabled { background: @sunken; color: @ink-3; border-color: @line; }
+QPushButton#rowMatchTag { padding: 2px 6px; }
+QTableView#detectionTotalsTable QHeaderView::section { padding: 4px; }
 QPushButton:disabled, QToolButton:disabled, QPushButton#primary:disabled, QPushButton[role="primary"]:disabled,
 QPushButton[role="stop"]:disabled { background: @sunken; color: @ink-3; border-color: @line; }
 QCheckBox, QRadioButton { spacing: 8px; min-height: 22px; }

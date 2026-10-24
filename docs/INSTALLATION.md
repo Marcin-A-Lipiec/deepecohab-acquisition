@@ -5,7 +5,7 @@ the primary guide for installation, update notifications, updating, rollback
 and uninstallation. This page provides additional setup and diagnostic detail.
 
 The Windows helper supports `-ReleaseVersion latest` or a specific stable version
-such as `-ReleaseVersion 1.0.0`. It downloads release metadata, uses that release's
+such as `-ReleaseVersion 1.0.1`. It downloads release metadata, uses that release's
 wheel and tagged dependency constraints, and does not need Git. Without that
 option it installs the local source folder as before. A source upload or tag
 alone is not a published installation package. Public release assets must exist.
@@ -49,29 +49,29 @@ PowerShell policy is changed. If an exposed command is not found, run
 `uv tool update-shell`, then open a new terminal. The installer also resolves
 the shortcut command directly in uv's executable directory.
 
-## Version 1.0.0 wheel and GitHub release
+## Version 1.0.1 wheel and GitHub release
 
 The built wheel can be installed without Git:
 
 ```powershell
-uv tool install --python 3.12 --constraints requirements.txt .\dist\deepecohab_acquisition-1.0.0-py3-none-any.whl
+uv tool install --python 3.12 --constraints requirements.txt .\dist\deepecohab_acquisition-1.0.1-py3-none-any.whl
 deepecohab-acquisition-shortcut
 ```
 
 The intended repository is `Marcin-A-Lipiec/deepecohab-acquisition`. The following
-URLs become available after the maintainer publishes tag **v1.0.0** and uploads
+URLs become available after the maintainer publishes tag **v1.0.1** and uploads
 the built wheel to its GitHub Release. They do not work before publication.
 Users will be able to install without downloading the source or installing Git:
 
 ```powershell
-uv tool install --python 3.12 --constraints "https://raw.githubusercontent.com/Marcin-A-Lipiec/deepecohab-acquisition/v1.0.0/requirements.txt" "https://github.com/Marcin-A-Lipiec/deepecohab-acquisition/releases/download/v1.0.0/deepecohab_acquisition-1.0.0-py3-none-any.whl"
+uv tool install --python 3.12 --constraints "https://raw.githubusercontent.com/Marcin-A-Lipiec/deepecohab-acquisition/v1.0.1/requirements.txt" "https://github.com/Marcin-A-Lipiec/deepecohab-acquisition/releases/download/v1.0.1/deepecohab_acquisition-1.0.1-py3-none-any.whl"
 deepecohab-acquisition-shortcut
 ```
 
 For installation directly from the tagged source, install Git and use:
 
 ```powershell
-uv tool install --python 3.12 --constraints "https://raw.githubusercontent.com/Marcin-A-Lipiec/deepecohab-acquisition/v1.0.0/requirements.txt" "git+https://github.com/Marcin-A-Lipiec/deepecohab-acquisition.git@v1.0.0"
+uv tool install --python 3.12 --constraints "https://raw.githubusercontent.com/Marcin-A-Lipiec/deepecohab-acquisition/v1.0.1/requirements.txt" "git+https://github.com/Marcin-A-Lipiec/deepecohab-acquisition.git@v1.0.1"
 deepecohab-acquisition-shortcut
 ```
 
@@ -211,7 +211,8 @@ For rollback, install the previous wheel/tag the same way. Experiments and logs
 are separate from the tool environment and are retained.
 
 To check for a new stable release without installing anything, choose
-**Experiment → Check for updates** or run:
+**Other options → Check for updates** (**Experiment → Check for updates** in
+v1.0.0) or run:
 
 ```powershell
 deepecohab-acquisition-cli updates

@@ -1,3 +1,4 @@
+from tests.helpers import settle_discovery
 """Complete diagnostics, reporting thresholds, merge defaults and tunnel measures."""
 import copy
 from dataclasses import replace
@@ -248,6 +249,7 @@ def test_advanced_defaults_and_persisted_user_choices(gui):
     e.window._apply(loaded)
     e.window._sync_context()
     tab.configure_experiment(force=True)
+    settle_discovery(tab)
     assert tab.options['split_restarts'] is True
     assert tab.options['minimum_recording_gap_seconds'] == 30
     assert tab.options['ignore_short_recording_gaps'] is False

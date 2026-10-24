@@ -2,11 +2,8 @@
 
 from __future__ import annotations
 import copy
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QPersistentModelIndex, Qt
 from PySide6.QtWidgets import (
-    QCheckBox,
-    QGridLayout,
-    QGroupBox,
     QHBoxLayout,
     QHeaderView,
     QLabel,
@@ -22,6 +19,7 @@ from deepecohab_recorder.ui.wheel_scroll import (
 from deepecohab_recorder.ui.date_time_fields import TemporalDelegate
 from deepecohab_recorder.schema import normalize_animals
 from deepecohab_recorder.ui.common import config_buttons, MatchDialog
+from deepecohab_recorder.ui.animal_headers import ColumnSharingHeader, RowMatchHeader
 
 
 class AnimalDetailsTab(QWidget):
@@ -43,6 +41,8 @@ class AnimalDetailsTab(QWidget):
         super().__init__()
         self.ui = ui
         self._loading, self._extras = False, []
+        self._generation, self._matching = 0, False
+        self._known_tags = frozenset()
         layout = QVBoxLayout(self)
         layout.addLayout(config_buttons(self, "animal details"))
         row = QHBoxLayout()
@@ -61,23 +61,22 @@ class AnimalDetailsTab(QWidget):
         )
         note.setWordWrap(True)
         layout.addWidget(note)
-        group = QGroupBox(
-            "Check if the value is same for all the mice within the group"
-        )
-        grid = QGridLayout(group)
-        self.same_grid = grid
-        self.same = {}
-        for i, (key, title) in enumerate(self.COLUMNS[3:]):
-            box = QCheckBox(title)
-            self.same[key] = box
-            grid.addWidget(box, i // 4, i % 4)
-            box.toggled.connect(
-                lambda on, key=key: self.copy_column(key) if on else None
-            )
-        layout.addWidget(group)
+        sharing = QLabel("Check a box above a column to use the first mouse's value for all mice in that column.")
+        sharing.setWordWrap(True)
+        layout.addWidget(sharing)
         self.table = QTableWidget(12, len(self.COLUMNS))
+        self.sharing_header = ColumnSharingHeader([(i, key, title) for i, (key, title) in enumerate(self.COLUMNS) if i >= 3], self.table)
+        self.table.setHorizontalHeader(self.sharing_header)
+        self.same = {key: box for key, (_, box) in self.sharing_header.boxes.items()}
+        for key, box in self.same.items():
+            box.toggled.connect(lambda on, key=key: self._sharing_changed(key, on))
+        self.row_actions = RowMatchHeader(self.table)
+        self.table.setVerticalHeader(self.row_actions)
+        self.row_actions.match_requested.connect(self.match_row)
+        self.table.horizontalScrollBar().valueChanged.connect(self.sharing_header.position_controls)
+        self.table.verticalScrollBar().valueChanged.connect(self.row_actions.position_controls)
+        self.table.setCornerButtonEnabled(False)
         self.table.setHorizontalHeaderLabels([title for _, title in self.COLUMNS])
-        self.table.verticalHeader().hide()
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
         for col in range(len(self.COLUMNS)):
             self.table.setColumnWidth(col, 130 if col else 48)
@@ -95,6 +94,7 @@ class AnimalDetailsTab(QWidget):
         self.resize_rows(12)
 
     def resize_rows(self, count):
+        was_loading = self._loading
         self._loading = True
         self.table.setRowCount(count)
         while len(self._extras) < count:
@@ -110,22 +110,49 @@ class AnimalDetailsTab(QWidget):
                     self.table.item(row, col).setFlags(
                         Qt.ItemIsEnabled | Qt.ItemIsSelectable
                     )
-        self._loading = False
+        self.row_actions.sync_rows(count)
+        self._loading = was_loading
         for key, box in self.same.items():
-            if box.isChecked():
-                self.copy_column(key)
+            self._sharing_changed(key, box.isChecked())
+        if not self._loading:
+            self._notify_tags()
 
     def changed(self, item):
         if not self._loading:
             key = self.COLUMNS[item.column()][0]
             if key in self.same and self.same[key].isChecked():
-                self.copy_column(key, item.row())
+                self.copy_column(key)
+            if key == "tag":
+                self._notify_tags()
 
-    def copy_column(self, key, source=0):
+    def _notify_tags(self):
+        tags = frozenset(self.table.item(row, 1).text().strip().upper()
+                         for row in range(self.table.rowCount())
+                         if self.table.item(row, 1) and self.table.item(row, 1).text().strip())
+        if tags != self._known_tags:
+            self._known_tags = tags
+            self.ui.animal_tags_changed(tags)
+
+    def _sharing_changed(self, key, on):
         if not hasattr(self, "table") or self._loading:
             return
         col = next(i for i, pair in enumerate(self.COLUMNS) if pair[0] == key)
-        item = self.table.item(source, col)
+        self._loading = True
+        for row in range(self.table.rowCount()):
+            item = self.table.item(row, col)
+            if item is not None:
+                flags = item.flags()
+                item.setFlags(flags & ~Qt.ItemIsEditable if on and row else flags | Qt.ItemIsEditable)
+                item.setToolTip("Follows the first mouse. Uncheck the box above this column to edit independently." if on and row else "")
+        self._loading = False
+        if on:
+            self.copy_column(key)
+
+    def copy_column(self, key):
+        if not hasattr(self, "table") or self._loading:
+            return
+        col = next(i for i, pair in enumerate(self.COLUMNS) if pair[0] == key)
+        item = self.table.item(0, col)
         if item is None:
             return
         self._loading = True
@@ -136,12 +163,23 @@ class AnimalDetailsTab(QWidget):
 
     def match(self):
         row = self.table.currentRow()
-        if row < 0:
-            row = 0
-        if self.ui.prepare_matching():
+        self.match_row(max(0, row))
+
+    def match_row(self, row):
+        if self._matching or not 0 <= row < self.table.rowCount():
+            return
+        target = QPersistentModelIndex(self.table.model().index(row, 1))
+        generation = self._generation
+        self._matching = True
+        try:
+            if not self.ui.prepare_matching():
+                return
             dialog = MatchDialog(self.ui, self)
-            if dialog.exec() and dialog.selected:
-                self.table.item(row, 1).setText(dialog.selected[0])
+            dialog.setWindowTitle(f"Match RFID tag for mouse {row + 1}")
+            if dialog.exec() and dialog.selected and generation == self._generation and target.isValid():
+                self.table.item(target.row(), target.column()).setText(dialog.selected[0])
+        finally:
+            self._matching = False
 
     def read(self):
         rows = []
@@ -159,6 +197,8 @@ class AnimalDetailsTab(QWidget):
         }
 
     def load(self, data):
+        self._generation += 1
+        self._loading = True
         cohort = data["recording"]["cohort"]
         rows = cohort["animals"]
         for box in self.same.values():
@@ -175,9 +215,6 @@ class AnimalDetailsTab(QWidget):
                     str(source.get(key, row + 1 if col == 0 else "") or "")
                 )
         self._loading = False
-
-    def viewport_size(self, width, height):
-        columns = 2 if width < 750 else 4
-        for index, box in enumerate(self.same.values()):
-            self.same_grid.removeWidget(box)
-            self.same_grid.addWidget(box, index // columns, index % columns)
+        for key, box in self.same.items():
+            self._sharing_changed(key, box.isChecked())
+        self._notify_tags()

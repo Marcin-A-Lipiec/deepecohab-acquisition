@@ -23,6 +23,7 @@ class RFIDBoardController(SerialCapture):
             + list(self.protocol.ttl_channels)
         }
         self._tag_counts = {}
+        self._ttl_counts = {channel: 0 for channel in self.protocol.ttl_channels}
         self._events = deque(maxlen=8192)
         self._rfid_event_counter = 0
 
@@ -43,7 +44,9 @@ class RFIDBoardController(SerialCapture):
                 "t": time.monotonic(),
                 "tag": record.payload,
             }
-            if not record.is_ttl:
+            if record.is_ttl:
+                self._ttl_counts[record.logical_channel] += 1
+            else:
                 if (
                     record.payload not in self._tag_counts
                     and len(self._tag_counts) >= 10000
@@ -76,6 +79,10 @@ class RFIDBoardController(SerialCapture):
     def get_tag_counts_snapshot(self):
         with self._data_lock:
             return dict(self._tag_counts)
+
+    def get_ttl_counts_snapshot(self):
+        with self._data_lock:
+            return dict(self._ttl_counts)
 
     def get_last_rfid_event(self):
         with self._data_lock:

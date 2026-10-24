@@ -1,3 +1,4 @@
+from tests.helpers import settle_discovery
 """Patch 11: schema contract, confirmed layout repair and experiment-wide times."""
 from deepecohab_recorder.config_bundle import load_config_bundle
 import copy
@@ -257,8 +258,10 @@ class GuiTests(unittest.TestCase):
         legacy(folder/'raw.txt',[(0,1,TAG),(100,2,TAG)])
         self.window.widgets['layout'].graph=bare_layout()
         tab=self.window.widgets['preprocessing'];tab.scan_directory()
+        settle_discovery(tab)
         tab.table.item(0,2).setText('COM6')
         self.window.save_all();self.app.processEvents()
+        settle_discovery(tab)
         path=self.root/'Test.config.json';before=path.read_bytes()
         with patch.object(QMessageBox,'question',return_value=QMessageBox.Cancel):
             self.assertFalse(tab.confirm_layout_labels(tab.read_config(),tab.input_specs()))

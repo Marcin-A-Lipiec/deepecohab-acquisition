@@ -1,3 +1,4 @@
+from tests.helpers import settle_discovery
 """Navigation must preserve drafts, live resources and the existing close lifecycle."""
 import copy
 import gc
@@ -368,6 +369,7 @@ def test_navigation_with_real_preprocessing_worker_completion_cancel_and_close(w
     raw = root / "COM5_synthetic.csv"
     raw.write_text("A-1;1A63A81904;0;2025-06-01T12:00:00+02:00;1\nB-1;1A63A81904;A;2025-06-01T12:00:00.100+02:00;1\n", encoding="utf-8")
     tab.add_paths([raw])
+    settle_discovery(tab)
     assert tab.table.rowCount() == 1
     tab.output_path.setText(str(root / "processed"))
     tab.options.update(whitelist=False, interpolate=False)
@@ -420,6 +422,7 @@ def test_navigation_with_real_preprocessing_worker_completion_cancel_and_close(w
         else:
             window.refresh()
             assert "Preprocessing task running" not in window.header.activity.text()
+            qt_wait(app, lambda: tab.start_button.isEnabled())
             assert tab.start_button.isEnabled() and not tab.cancel_button.isEnabled()
     finally:
         release.touch()
